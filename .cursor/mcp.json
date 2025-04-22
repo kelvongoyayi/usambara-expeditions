@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "/usr/local/bin/mcp-server-supabase",
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "sbp_ddb53b3a2139dffa05d74721f06388dc48d62473"
+      }
+    }
+  }
+}

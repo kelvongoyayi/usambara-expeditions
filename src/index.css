@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Manrope', system-ui, sans-serif;
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+  }
+  
+  body {
+    @apply bg-gray-50 text-dark-800;
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+@layer utilities {
+  .animate-fadeIn {
+    animation: fadeIn 1s ease-in-out forwards;
+  }
+  
+  .animate-scrollDown {
+    animation: scrollDown 2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  }
+  
+  .grid-transition {
+    @apply transition-all duration-500 ease-in-out;
+  }
+  
+  .grid-enter {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  
+  .grid-enter-active {
+    opacity: 1;
+    transform: scale(1);
+  }
+  
+  .grid-exit {
+    opacity: 1;
+    transform: scale(1);
+  }
+  
+  .grid-exit-active {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  
+  .glass-effect {
+    @apply backdrop-blur-md bg-white/70 border border-white/20;
+  }
+  
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-brand-400;
+  }
+  
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-card hover:-translate-y-2;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center rounded-lg font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+
+  .btn-primary {
+    @apply bg-brand-600 text-white hover:bg-brand-700 focus:ring-brand-500;
+  }
+
+  .btn-secondary {
+    @apply bg-accent-500 text-white hover:bg-accent-600 focus:ring-accent-400;
+  }
+
+  .btn-outline {
+    @apply border-2 border-brand-600 text-brand-600 hover:bg-brand-50 focus:ring-brand-500;
+  }
+
+  .btn-glass {
+    @apply backdrop-blur-md bg-white/20 text-white border border-white/30 hover:bg-white/30 focus:ring-white;
+  }
+
+  .btn-text {
+    @apply text-brand-600 hover:text-brand-700 hover:bg-brand-50 focus:ring-brand-500;
+  }
+
+  .btn-sm {
+    @apply text-sm px-4 py-1.5;
+  }
+
+  .btn-md {
+    @apply text-base px-5 py-2.5;
+  }
+
+  .btn-lg {
+    @apply text-lg px-7 py-3;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes scrollDown {
+    0% {
+      transform: translateY(-4px);
+      opacity: 0.5;
+    }
+    50% {
+      transform: translateY(4px);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(-4px);
+      opacity: 0.5;
+    }
+  }
+
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  @keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://unpkg.com/knip@3/schema.json",
+  "entry": [
+    "src/main.tsx",
+    "src/App.tsx",
+    "src/scripts/migrate.ts",
+    "src/scripts/runMigration.js"
+  ],
+  "project": [
+    "src/**/*.{js,ts,jsx,tsx}"
+  ],
+  "ignoreDependencies": [
+    "tailwindcss",
+    "autoprefixer",
+    "postcss"
+  ],
+  "ignore": [
+    "supabase/migrations/**",
+    "src/types/database.types.ts",
+    "src/services/bookings.service.ts",
+    "src/services/destinations.service.ts",
+    "src/services/events.service.ts",
+    "src/services/testimonials.service.ts",
+    "src/services/tours.service.ts",
+    "src/services/storage.service.ts"
+  ],
+  "rules": {
+    "classMembers": "warn",
+    "duplicateExports": "error",
+    "enumMembers": "warn",
+    "exports": "error",
+    "files": "error",
+    "nsExports": "error",
+    "types": "error",
+    "unused": "error"
+  }
+}
