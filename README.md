@@ -31,7 +31,7 @@ This repository contains the codebase for the Usambara Expeditions website, a to
 
 1. Clone the repository:
    ```
-   git clone https://github.com/YOUR_USERNAME/usambara-expeditions.git
+   git clone https://github.com/kelvongoyayi/usambara-expeditions.git
    cd usambara-expeditions
    ```
 
@@ -67,4 +67,4 @@ Please read the contributing guidelines before submitting pull requests.
 
 ## License
 
-This project is licensed under the MIT License. 
+This project is licensed under the MIT License.
