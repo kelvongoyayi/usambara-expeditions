@@ -1,62 +1,71 @@
 import React, { useState, useEffect } from 'react';
-import { Database, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Tooltip } from '../ui/tooltip';
 import { supabase } from '../../lib/supabase';
+import { cn } from '../../utils/cn';
 
 const DatabaseConnectionIndicator: React.FC = () => {
   const [connected, setConnected] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
     const checkConnection = async () => {
+      if (!isMounted) return;
+      if (!loading) setLoading(true);
       try {
-        setLoading(true);
-        const { data, error } = await supabase.rpc('check_database_connection');
-        
+        const { error } = await supabase.auth.getUser();
+        if (!isMounted) return;
         if (error) {
-          console.error('Error checking database connection:', error);
+          console.warn('DB connection check failed:', error.message);
           setConnected(false);
         } else {
-          setConnected(data?.connected || false);
+          setConnected(true);
         }
       } catch (err) {
+        if (!isMounted) return;
         console.error('Failed to check database connection:', err);
         setConnected(false);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     checkConnection();
-    
-    // Check connection every 5 minutes
     const interval = setInterval(checkConnection, 5 * 60 * 1000);
-    
-    return () => clearInterval(interval);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center bg-gray-100 px-3 py-1 rounded-full">
-        <Database className="w-4 h-4 text-gray-500 mr-1.5" />
-        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
-      </div>
-    );
-  }
+  let statusColor = 'bg-gray-400';
+  let statusText = 'Checking connection...';
 
-  if (connected === true) {
-    return (
-      <div className="flex items-center bg-green-50 px-3 py-1 rounded-full">
-        <CheckCircle className="w-4 h-4 text-green-500 mr-1.5" />
-        <span className="text-xs font-medium text-green-700">Connected</span>
-      </div>
-    );
+  if (!loading) {
+    if (connected === true) {
+      statusColor = 'bg-green-500';
+      statusText = 'Database Connected';
+    } else if (connected === false) {
+      statusColor = 'bg-red-500';
+      statusText = 'Database Disconnected';
+    }
   }
 
   return (
-    <div className="flex items-center bg-red-50 px-3 py-1 rounded-full">
-      <AlertTriangle className="w-4 h-4 text-red-500 mr-1.5" />
-      <span className="text-xs font-medium text-red-700">Disconnected</span>
-    </div>
+    <Tooltip content={statusText} side="bottom" delayDuration={100}>
+      <div className="flex items-center justify-center w-6 h-6" aria-label={statusText}>
+        <span 
+          className={cn(
+            'block w-2.5 h-2.5 rounded-full transition-colors duration-300',
+            statusColor,
+            loading && 'animate-pulse'
+          )}
+        />
+      </div>
+    </Tooltip>
   );
 };
 

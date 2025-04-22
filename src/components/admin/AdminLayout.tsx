@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, Navigate } from 'react-router-dom';
 import { 
-  Menu, X, ChevronDown, ChevronRight, LayoutDashboard, Map, Users, 
+  X, ChevronRight, LayoutDashboard, Map, Users, 
   Calendar, Route, MessageSquare, Image, FileText, Settings, LogOut,
-  HelpCircle, BookOpen, Home, Bell, Search, Briefcase
+  HelpCircle, BookOpen
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import DatabaseConnectionIndicator from './DatabaseConnectionIndicator';
 import AdminHeader from './AdminHeader';
 
 interface AdminLayoutProps {
@@ -15,39 +14,63 @@ interface AdminLayoutProps {
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const { isAdmin, user, signOut } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const location = useLocation();
+  const sidebarRef = useRef<HTMLElement>(null);
+
+  // Update sidebar state on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      // Reset sidebar state based on new screen size
+      setSidebarOpen(!mobile); 
+    };
+    window.addEventListener('resize', handleResize);
+    // Initial check in case the window size is already mobile
+    handleResize(); 
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Close mobile sidebar on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isMobile && sidebarOpen && sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
+        const menuButton = document.getElementById('mobile-menu-button');
+        if (!menuButton || !menuButton.contains(event.target as Node)) {
+          setSidebarOpen(false);
+        }
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMobile, sidebarOpen]);
 
   // Auto-expand submenu based on current path
   useEffect(() => {
     const currentPath = location.pathname;
-    
-    // Use a more stable approach to determine which submenu should be active
+    let foundActive = false;
     for (const item of menuItems) {
       if (item.submenu && currentPath.startsWith(item.path)) {
-        // Check if we're on this section or one of its subpages
-        if (currentPath === item.path || item.submenu.some(subItem => currentPath === subItem.path)) {
+        // Only set active if the current path is the parent or a direct child
+        if (currentPath === item.path || item.submenu.some(sub => currentPath === sub.path)) {
           setActiveSubmenu(item.title.toLowerCase());
-          return; // Exit once we've found the correct submenu
+          foundActive = true;
+          break;
         }
       }
     }
-    
-    // If no matching submenu is found, don't reset it unless we've navigated completely away
-    // This prevents flickering when clicking within the same submenu section
-    const currentSection = menuItems.find(item => 
-      item.submenu && activeSubmenu === item.title.toLowerCase()
-    );
-    
-    // Only reset the activeSubmenu if we're navigating to a completely different section
-    if (!currentSection || !currentPath.startsWith(currentSection.path)) {
-      setActiveSubmenu(null);
+    // If navigating away from the active section, collapse it
+    if (!foundActive && activeSubmenu) {
+      const activeParentPath = menuItems.find(i => i.title.toLowerCase() === activeSubmenu)?.path;
+      if (!activeParentPath || !currentPath.startsWith(activeParentPath)) {
+        setActiveSubmenu(null);
+      }
     }
-  }, [location.pathname]);
+  }, [location.pathname]); // Removed activeSubmenu dependency to prevent potential loops
 
-  // If user is not logged in or not an admin, redirect to access denied
   if (!user) {
     return <Navigate to="/auth/signin" state={{ from: location }} replace />;
   }
@@ -57,376 +80,170 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   }
 
   const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-    if (sidebarOpen) {
-      setActiveSubmenu(null);
+    setSidebarOpen(prev => !prev);
+    // Collapse submenu if sidebar is closing
+    if (sidebarOpen && activeSubmenu) { 
+        setActiveSubmenu(null);
     }
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
   };
 
   const toggleSubmenu = (menu: string) => {
-    setActiveSubmenu(activeSubmenu === menu ? null : menu);
+    // console.log('Toggling submenu:', menu, 'Current active:', activeSubmenu); // Debugging line
+    setActiveSubmenu(prev => (prev === menu ? null : menu));
   };
 
-  // Improved isLinkActive function to prevent multiple highlights
-  const isLinkActive = (path: string, exact = false) => {
-    // Exact match for root admin path
-    if (path === '/admin' && location.pathname === '/admin') {
+  const isLinkActive = (path: string) => {
+    if (path === '/admin' && location.pathname === '/admin') return true;
+    const isSubmenuItem = menuItems.some(item => item.submenu?.some(sub => sub.path === path));
+    if (isSubmenuItem) return location.pathname === path;
+    if (path !== '/admin' && location.pathname.startsWith(path)) {
+      const parentItem = menuItems.find(item => item.path === path && item.submenu);
+      if (parentItem && parentItem.submenu?.some(sub => location.pathname === sub.path)) return false;
       return true;
     }
-    
-    // For exact matches (used by submenu items), only return true if the path exactly matches
-    if (exact) {
-      return location.pathname === path;
-    }
-    
-    // For parent items (that have submenus), we need special handling
-    const parentItem = menuItems.find(item => item.path === path && item.submenu);
-    if (parentItem && parentItem.submenu) {
-      // If we're on a submenu page, don't highlight the parent
-      const isOnSubmenuPage = parentItem.submenu.some(subItem => location.pathname === subItem.path);
-      if (isOnSubmenuPage) {
-        return false;
-      }
-      
-      // Only highlight the parent if we're exactly on its path
-      return location.pathname === path;
-    }
-    
-    // For regular items without submenus
-    if (path !== '/admin' && location.pathname.startsWith(path)) {
-      const remainingPath = location.pathname.slice(path.length);
-      return remainingPath === '' || remainingPath.startsWith('/');
-    }
-    
     return false;
   };
-
+  
   const menuItems = [
-    {
-      title: 'Dashboard',
-      icon: <LayoutDashboard className="w-5 h-5" />,
-      path: '/admin',
-      exact: true
-    },
-    {
-      title: 'Tours',
-      icon: <Route className="w-5 h-5" />,
-      path: '/admin/tours',
-      submenu: [
-        { title: 'All Tours', path: '/admin/tours' },
-        { title: 'Add New Tour', path: '/admin/tours/create' },
-        { title: 'Categories', path: '/admin/tours/categories' }
-      ]
-    },
-    {
-      title: 'Events',
-      icon: <Calendar className="w-5 h-5" />,
-      path: '/admin/events',
-      submenu: [
-        { title: 'All Events', path: '/admin/events' },
-        { title: 'Add New Event', path: '/admin/events/create' },
-        { title: 'Event Types', path: '/admin/events/types' }
-      ]
-    },
-    {
-      title: 'Bookings',
-      icon: <BookOpen className="w-5 h-5" />,
-      path: '/admin/bookings'
-    },
-    {
-      title: 'Destinations',
-      icon: <Map className="w-5 h-5" />,
-      path: '/admin/destinations'
-    },
-    {
-      title: 'Users',
-      icon: <Users className="w-5 h-5" />,
-      path: '/admin/users'
-    },
-    {
-      title: 'Media',
-      icon: <Image className="w-5 h-5" />,
-      path: '/admin/media'
-    },
-    {
-      title: 'Blog',
-      icon: <FileText className="w-5 h-5" />,
-      path: '/admin/blog',
-      submenu: [
-        { title: 'All Posts', path: '/admin/blog' },
-        { title: 'Add New Post', path: '/admin/blog/create' },
-        { title: 'Categories', path: '/admin/blog/categories' }
-      ]
-    },
-    {
-      title: 'Messages',
-      icon: <MessageSquare className="w-5 h-5" />,
-      path: '/admin/messages'
-    },
-    {
-      title: 'Settings',
-      icon: <Settings className="w-5 h-5" />,
-      path: '/admin/settings'
-    },
-    {
-      title: 'Help',
-      icon: <HelpCircle className="w-5 h-5" />,
-      path: '/admin/help'
-    }
+    { title: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" />, path: '/admin' },
+    { title: 'Tours', icon: <Route className="w-5 h-5" />, path: '/admin/tours', submenu: [
+        { title: 'All Tours', path: '/admin/tours' }, { title: 'Add New Tour', path: '/admin/tours/create' }, { title: 'Categories', path: '/admin/tours/categories' }
+    ]},
+    { title: 'Events', icon: <Calendar className="w-5 h-5" />, path: '/admin/events', submenu: [
+        { title: 'All Events', path: '/admin/events' }, { title: 'Add New Event', path: '/admin/events/create' }, { title: 'Event Types', path: '/admin/events/types' }
+    ]},
+    { title: 'Bookings', icon: <BookOpen className="w-5 h-5" />, path: '/admin/bookings' },
+    { title: 'Destinations', icon: <Map className="w-5 h-5" />, path: '/admin/destinations' },
+    { title: 'Users', icon: <Users className="w-5 h-5" />, path: '/admin/users' },
+    { title: 'Media', icon: <Image className="w-5 h-5" />, path: '/admin/media' },
+    { title: 'Blog', icon: <FileText className="w-5 h-5" />, path: '/admin/blog', submenu: [
+        { title: 'All Posts', path: '/admin/blog' }, { title: 'Add New Post', path: '/admin/blog/create' }, { title: 'Categories', path: '/admin/blog/categories' }
+    ]},
+    { title: 'Messages', icon: <MessageSquare className="w-5 h-5" />, path: '/admin/messages' },
+    { title: 'Settings', icon: <Settings className="w-5 h-5" />, path: '/admin/settings' },
+    { title: 'Help', icon: <HelpCircle className="w-5 h-5" />, path: '/admin/help' }
   ];
 
   const handleSignOut = async () => {
-    try {
-      await signOut();
-      window.location.href = '/';
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
+    try { await signOut(); window.location.href = '/'; }
+    catch (error) { console.error('Error signing out:', error); }
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar - Desktop */}
+    <div className="flex h-screen bg-gray-100 overflow-hidden">
+      {/* Mobile Overlay */} 
+      {isMobile && sidebarOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 ease-in-out" onClick={toggleSidebar} aria-hidden="true"></div>
+      )}
+      
+      {/* Sidebar */}
       <aside 
-        className={`fixed md:sticky top-0 inset-y-0 left-0 z-50 bg-brand-800 text-white transition-all duration-300 transform ${
-          sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 md:w-20'
-        } shadow-xl md:relative`}
+        ref={sidebarRef} 
+        className={`
+          fixed inset-y-0 left-0 z-50 bg-gradient-to-b from-brand-800 to-brand-900 text-white 
+          transition-all duration-400 ease-in-out transform shadow-lg /* Increased duration */
+          flex flex-col 
+          ${sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full'} 
+          md:sticky md:translate-x-0 
+          ${sidebarOpen ? 'md:w-64' : 'md:w-20'}
+        `}
       >
         {/* Sidebar Header */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-brand-700">
-          <div className={`flex items-center space-x-3 ${!sidebarOpen && 'md:hidden'}`}>
-            <div className="w-9 h-9 bg-accent-500 rounded-lg flex items-center justify-center">
-              <span className="font-bold text-white text-lg">UE</span>
-            </div>
-            <span className="font-semibold text-white text-lg">Admin</span>
-          </div>
-          <button
-            onClick={toggleSidebar}
-            className="p-2 rounded-md text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
-            aria-label="Toggle sidebar"
-          >
-            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+        <div className={`flex items-center h-16 px-4 border-b border-brand-700 flex-shrink-0 ${sidebarOpen ? 'justify-between' : 'justify-center'}`}> 
+          <Link to="/admin" className={`flex items-center space-x-3 ${!sidebarOpen && 'md:hidden'}`}> 
+             <div className="w-9 h-9 bg-accent-500 rounded-lg flex items-center justify-center flex-shrink-0"><span className="font-bold text-white text-lg">UE</span></div>
+            <span className="font-semibold text-white text-lg whitespace-nowrap">Admin Panel</span>
+          </Link>
+          {/* Mobile Close Button */} 
+          {isMobile && sidebarOpen && ( 
+            <button onClick={toggleSidebar} className="p-2 rounded-md text-brand-300 hover:bg-brand-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white" aria-label="Close sidebar"><X className="w-6 h-6" /></button>
+          )}
+           {/* Collapsed State Logo (Desktop) */} 
+           {!sidebarOpen && !isMobile && (
+             <div className="w-9 h-9 bg-accent-500 rounded-lg flex items-center justify-center flex-shrink-0"><span className="font-bold text-white text-lg">UE</span></div>
+           )}
         </div>
-
+        
         {/* Sidebar Menu */}
-        <div className="overflow-y-auto h-[calc(100vh-4rem)] scrollbar-thin scrollbar-thumb-brand-700 scrollbar-track-transparent">
-          <nav className="mt-5 px-2">
-            <ul className="space-y-1">
-              {menuItems.map((item, index) => (
-                <li key={index} className="mb-1">
+        <div className="flex-grow overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-brand-700 scrollbar-track-brand-800">
+          <nav className={`px-3 py-4 ${!sidebarOpen && 'md:px-1'}`}> 
+            <ul className="space-y-1.5">
+              {menuItems.map((item) => ( // Removed index from map
+                <li key={item.path || item.title}> {/* Use path or title as key */}
                   {item.submenu ? (
-                    <div>
-                      <button
-                        onClick={() => toggleSubmenu(item.title.toLowerCase())}
-                        className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${
-                          isLinkActive(item.path) 
-                            ? 'bg-brand-700 text-white font-medium' 
-                            : 'text-brand-200 hover:bg-brand-700 hover:text-white'
-                        } ${sidebarOpen ? 'text-left' : 'justify-center'}`}
+                    <>
+                      <button 
+                        onClick={() => toggleSubmenu(item.title.toLowerCase())} 
+                        className={`
+                          w-full flex items-center justify-between px-3 py-2.5 rounded-md transition-colors duration-150 ease-in-out group 
+                          ${sidebarOpen ? '' : 'md:justify-center'} 
+                          ${isLinkActive(item.path) && !item.submenu.some(sub => location.pathname === sub.path) ? 'bg-brand-700 text-white font-semibold' : 'text-brand-200 hover:bg-brand-700 hover:text-white'}
+                        `} 
+                        aria-expanded={activeSubmenu === item.title.toLowerCase()}
                       >
-                        <div className="flex items-center">
-                          <span className="mr-3">{item.icon}</span>
-                          {sidebarOpen && <span className="text-sm">{item.title}</span>}
+                        <div className={`flex items-center ${sidebarOpen ? 'space-x-3' : 'md:justify-center'}`}> 
+                          <span className={`flex-shrink-0 group-hover:text-white transition-colors duration-150 ${!sidebarOpen && 'md:mx-auto'}`}>{item.icon}</span> 
+                          <span className={`text-sm font-medium ${!sidebarOpen && 'md:hidden'}`}>{item.title}</span> 
                         </div>
-                        {sidebarOpen && (
-                          activeSubmenu === item.title.toLowerCase() ? 
-                            <ChevronDown className="w-4 h-4" /> : 
-                            <ChevronRight className="w-4 h-4" />
-                        )}
+                        <ChevronRight className={`w-5 h-5 transform transition-transform duration-200 ease-in-out ${activeSubmenu === item.title.toLowerCase() ? 'rotate-90' : ''} ${!sidebarOpen && 'md:hidden'}`} /> 
                       </button>
-                      
-                      {/* Submenu */}
-                      {sidebarOpen && activeSubmenu === item.title.toLowerCase() && (
-                        <ul className="pl-9 mt-1 space-y-1">
-                          {item.submenu.map((subItem, subIndex) => (
-                            <li key={subIndex}>
-                              <Link
-                                to={subItem.path}
-                                className={`block px-3 py-2 rounded-lg transition-colors ${
-                                  isLinkActive(subItem.path, true) 
-                                    ? 'bg-brand-700 text-white font-medium' 
-                                    : 'text-brand-200 hover:bg-brand-700 hover:text-white'
-                                }`}
-                                // Prevent submenu from collapsing during navigation
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  // Keep the current submenu open
-                                  setActiveSubmenu(item.title.toLowerCase());
-                                }}
+                      {/* Submenu - Increased max-h */}
+                      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${activeSubmenu === item.title.toLowerCase() ? 'max-h-[500px] mt-1' : 'max-h-0'} ${!sidebarOpen && 'md:hidden'}`}> 
+                        <ul className="pl-8 pr-2 py-1 space-y-1 border-l border-brand-700 ml-4">
+                          {item.submenu.map((subItem) => ( // Removed subIndex
+                            <li key={subItem.path}> {/* Use path as key */}
+                              <Link 
+                                to={subItem.path} 
+                                onClick={isMobile ? toggleSidebar : undefined} 
+                                className={`
+                                  flex items-center px-3 py-2 rounded-md text-sm transition-colors duration-150 ease-in-out group
+                                  ${isLinkActive(subItem.path) 
+                                    ? 'bg-brand-600 text-white font-medium' /* Changed highlight */ 
+                                    : 'text-brand-300 hover:bg-brand-600 hover:text-white'}
+                                `}
                               >
-                                <span className="text-sm">{subItem.title}</span>
+                                {/* Removed dot span */}
+                                {subItem.title}
                               </Link>
                             </li>
                           ))}
                         </ul>
-                      )}
-                    </div>
+                      </div>
+                    </>
                   ) : (
-                    <Link
-                      to={item.path}
-                      className={`flex items-center px-4 py-2.5 rounded-lg transition-colors ${
-                        isLinkActive(item.path) 
-                          ? 'bg-brand-700 text-white font-medium' 
-                          : 'text-brand-200 hover:bg-brand-700 hover:text-white'
-                      } ${!sidebarOpen && 'justify-center'}`}
+                    <Link 
+                      to={item.path} 
+                      onClick={isMobile ? toggleSidebar : undefined} 
+                      className={`
+                        flex items-center px-3 py-2.5 rounded-md transition-colors duration-150 ease-in-out group 
+                        ${sidebarOpen ? '' : 'md:justify-center'} 
+                        ${isLinkActive(item.path) ? 'bg-brand-700 text-white font-semibold' : 'text-brand-200 hover:bg-brand-700 hover:text-white'}
+                      `}
                     >
-                      <span className="mr-3">{item.icon}</span>
-                      {sidebarOpen && <span className="text-sm">{item.title}</span>}
+                      <span className={`flex-shrink-0 group-hover:text-white transition-colors duration-150 ${sidebarOpen ? 'mr-3' : 'md:mx-auto'}`}>{item.icon}</span> 
+                      <span className={`text-sm font-medium ${!sidebarOpen && 'md:hidden'}`}>{item.title}</span> 
                     </Link>
                   )}
                 </li>
               ))}
             </ul>
           </nav>
-          
-          {/* Bottom Section */}
-          <div className="mt-6 px-3 py-4 border-t border-brand-700">
-            <Link
-              to="/"
-              className={`flex items-center px-3 py-2.5 rounded-lg transition-colors text-brand-200 hover:bg-brand-700 hover:text-white ${!sidebarOpen && 'justify-center'}`}
-            >
-              <Home className="w-5 h-5 mr-3" />
-              {sidebarOpen && <span className="text-sm">Back to Website</span>}
-            </Link>
-            <button
-              onClick={handleSignOut}
-              className={`w-full flex items-center px-3 py-2.5 mt-2 rounded-lg transition-colors text-brand-200 hover:bg-brand-700 hover:text-white ${!sidebarOpen && 'justify-center'}`}
-            >
-              <LogOut className="w-5 h-5 mr-3" />
-              {sidebarOpen && <span className="text-sm">Sign Out</span>}
-            </button>
-          </div>
+        </div>
+        
+        {/* Sidebar Footer */}
+        <div className={`px-4 py-3 border-t border-brand-700 flex-shrink-0 ${!sidebarOpen && 'md:px-2'}`}> 
+          <button onClick={handleSignOut} className={`w-full flex items-center px-3 py-2 rounded-md text-brand-200 hover:bg-red-600 hover:text-white transition-colors duration-150 ease-in-out group ${!sidebarOpen && 'md:justify-center'}`}> 
+             <LogOut className={`w-5 h-5 flex-shrink-0 group-hover:text-white transition-colors duration-150 ${sidebarOpen ? 'mr-3' : 'md:mx-auto'}`} /> 
+             <span className={`text-sm font-medium ${!sidebarOpen && 'md:hidden'}`}>Sign Out</span> 
+          </button>
         </div>
       </aside>
-
-      {/* Main Content */}
+      
+      {/* Main Content Area */} 
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="bg-white shadow-sm sticky top-0 z-30">
-          <AdminHeader />
-          <div className="md:hidden flex items-center px-4 py-2 border-t border-gray-200">
-            <button
-              onClick={toggleMobileMenu}
-              className="p-2 rounded-md text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
-            <div className="ml-4 font-semibold text-gray-800">Menu</div>
-          </div>
-        </header>
-        
-        {/* Mobile Menu Overlay */}
-        {mobileMenuOpen && (
-          <div className="md:hidden fixed inset-0 z-40 bg-black bg-opacity-50" onClick={toggleMobileMenu}>
-            <div className="fixed inset-y-0 left-0 max-w-xs w-full bg-brand-800 shadow-xl" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center justify-between h-16 px-4 border-b border-brand-700">
-                <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 bg-accent-500 rounded-lg flex items-center justify-center">
-                    <span className="font-bold text-white text-lg">UE</span>
-                  </div>
-                  <span className="font-semibold text-white text-lg">Admin</span>
-                </div>
-                <button onClick={toggleMobileMenu} className="text-white">
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              
-              <div className="overflow-y-auto h-full pb-16">
-                <nav className="mt-5 px-2">
-                  <ul className="space-y-1">
-                    {menuItems.map((item, index) => (
-                      <li key={index} className="mb-1">
-                        {item.submenu ? (
-                          <div>
-                            <button
-                              onClick={() => toggleSubmenu(item.title.toLowerCase())}
-                              className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors ${
-                                isLinkActive(item.path) 
-                                  ? 'bg-brand-700 text-white font-medium' 
-                                  : 'text-brand-200 hover:bg-brand-700 hover:text-white'
-                              }`}
-                            >
-                              <div className="flex items-center">
-                                <span className="mr-3">{item.icon}</span>
-                                <span>{item.title}</span>
-                              </div>
-                              {activeSubmenu === item.title.toLowerCase() ? 
-                                <ChevronDown className="w-4 h-4" /> : 
-                                <ChevronRight className="w-4 h-4" />
-                              }
-                            </button>
-                            
-                            {activeSubmenu === item.title.toLowerCase() && (
-                              <ul className="pl-10 mt-1 space-y-1">
-                                {item.submenu.map((subItem, subIndex) => (
-                                  <li key={subIndex}>
-                                    <Link
-                                      to={subItem.path}
-                                      onClick={toggleMobileMenu}
-                                      className={`block px-3 py-2 rounded-lg transition-colors ${
-                                        isLinkActive(subItem.path, true) 
-                                          ? 'bg-brand-700 text-white font-medium' 
-                                          : 'text-brand-200 hover:bg-brand-700 hover:text-white'
-                                      }`}
-                                    >
-                                      {subItem.title}
-                                    </Link>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        ) : (
-                          <Link
-                            to={item.path}
-                            onClick={toggleMobileMenu}
-                            className={`flex items-center px-4 py-2.5 rounded-lg transition-colors ${
-                              isLinkActive(item.path) 
-                                ? 'bg-brand-700 text-white font-medium' 
-                                : 'text-brand-200 hover:bg-brand-700 hover:text-white'
-                            }`}
-                          >
-                            <span className="mr-3">{item.icon}</span>
-                            <span>{item.title}</span>
-                          </Link>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </nav>
-                
-                <div className="mt-6 px-3 py-4 border-t border-brand-700">
-                  <Link
-                    to="/"
-                    onClick={toggleMobileMenu}
-                    className="flex items-center px-3 py-2.5 rounded-lg transition-colors text-brand-200 hover:bg-brand-700 hover:text-white"
-                  >
-                    <Home className="w-5 h-5 mr-3" />
-                    <span>Back to Website</span>
-                  </Link>
-                  <button
-                    onClick={handleSignOut}
-                    className="w-full flex items-center px-3 py-2.5 mt-2 rounded-lg transition-colors text-brand-200 hover:bg-brand-700 hover:text-white"
-                  >
-                    <LogOut className="w-5 h-5 mr-3" />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 sm:p-6 min-h-[calc(100vh-4rem)]">
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
+        <AdminHeader onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6 md:p-8" id="main-content">
+          {children}
         </main>
       </div>
     </div>
