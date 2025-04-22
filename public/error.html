@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Usambara Expeditions - Error</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #cc3300;
+    }
+    .error-container {
+      background-color: #f9f9f9;
+      border-left: 4px solid #cc3300;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    code {
+      background-color: #f0f0f0;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0055aa;
+    }
+    .debug-info {
+      background-color: #f0f0f0;
+      padding: 15px;
+      border-radius: 4px;
+      margin-top: 20px;
+      overflow-wrap: break-word;
+    }
+    .debug-row {
+      margin-bottom: 10px;
+    }
+    .debug-row b {
+      display: inline-block;
+      width: 150px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Usambara Expeditions</h1>
+  <div class="error-container">
+    <h2>Application Error</h2>
+    <p>The application encountered a problem while loading. This could be due to:</p>
+    <ul>
+      <li>Environment variables or API keys not being properly configured</li>
+      <li>Network connectivity issues</li>
+      <li>JavaScript runtime errors</li>
+      <li>Missing build files</li>
+    </ul>
+  </div>
+
+  <h3>What You Can Try</h3>
+  <ul>
+    <li>Refresh the page</li>
+    <li>Clear your browser cache and cookies</li>
+    <li>Try a different browser</li>
+    <li>Check your internet connection</li>
+  </ul>
+
+  <div>
+    <button onclick="window.location.href='/'">Return to Homepage</button>
+    <button onclick="window.location.reload(true)">Reload Page</button>
+  </div>
+
+  <div class="debug-info">
+    <h3>Diagnostic Information</h3>
+    <div class="debug-row"><b>Browser:</b> <span id="browser-info"></span></div>
+    <div class="debug-row"><b>URL:</b> <span id="url-info"></span></div>
+    <div class="debug-row"><b>Time:</b> <span id="time-info"></span></div>
+    <div class="debug-row"><b>Cookies Enabled:</b> <span id="cookies-info"></span></div>
+    <div class="debug-row"><b>LocalStorage:</b> <span id="storage-info"></span></div>
+  </div>
+
+  <script>
+    // Gather debug information
+    document.getElementById('browser-info').textContent = navigator.userAgent;
+    document.getElementById('url-info').textContent = window.location.href;
+    document.getElementById('time-info').textContent = new Date().toLocaleString();
+    document.getElementById('cookies-info').textContent = navigator.cookieEnabled;
+    
+    try {
+      localStorage.setItem('test', 'test');
+      localStorage.removeItem('test');
+      document.getElementById('storage-info').textContent = 'Available';
+    } catch (e) {
+      document.getElementById('storage-info').textContent = 'Not available: ' + e.message;
+    }
+
+    // Log debug info to console
+    console.log('Error page loaded', {
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+      time: new Date().toISOString(),
+      referrer: document.referrer,
+      screenSize: `${window.innerWidth}x${window.innerHeight}`
+    });
+  </script>
+</body>
+</html> 
