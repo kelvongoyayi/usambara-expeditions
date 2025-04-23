@@ -94,7 +94,7 @@ const ImagesStep: React.FC<ImagesStepProps> = ({ formValues, onChange, errors, o
     <div className="space-y-8">
       {/* Main Image Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <Image className="w-5 h-5 text-brand-600" />
             <h3 className="text-lg font-semibold text-gray-800">Main Tour Image</h3>
@@ -135,7 +135,7 @@ const ImagesStep: React.FC<ImagesStepProps> = ({ formValues, onChange, errors, o
                 value={imageUrlInput}
                 onChange={(e) => setImageUrlInput(e.target.value)}
                 placeholder="Paste image URL here"
-                className="flex-1 p-2 border rounded-md text-sm"
+                className="flex-1 min-w-0 p-2 border rounded-md text-sm"
                 disabled={uploading}
               />
               <button
@@ -152,7 +152,7 @@ const ImagesStep: React.FC<ImagesStepProps> = ({ formValues, onChange, errors, o
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-xl shadow-sm">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <Camera className="w-5 h-5 text-accent-500" />
             <h3 className="text-lg font-semibold text-gray-800">Image Gallery</h3>
@@ -183,7 +183,7 @@ const ImagesStep: React.FC<ImagesStepProps> = ({ formValues, onChange, errors, o
                 value={galleryUrlInput}
                 onChange={(e) => setGalleryUrlInput(e.target.value)}
                 placeholder="Paste image URL here"
-                className="flex-1 p-2 border rounded-md text-sm"
+                className="flex-1 min-w-0 p-2 border rounded-md text-sm"
                 disabled={uploading || (galleryPreview.length >= 10)}
               />
               <button
@@ -203,7 +203,7 @@ const ImagesStep: React.FC<ImagesStepProps> = ({ formValues, onChange, errors, o
       
       {/* Gallery Preview Section */}
       {galleryPreview.length > 0 && (
-        <div className="bg-white p-6 rounded-xl shadow-sm">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Gallery Preview</h3>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">

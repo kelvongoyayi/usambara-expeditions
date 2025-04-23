@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserPlus, Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { UserPlus, Menu } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import DatabaseConnectionIndicator from './DatabaseConnectionIndicator';
 import CreateAdminUserModal from './CreateAdminUserModal';
@@ -7,10 +7,9 @@ import CreateAdminUserModal from './CreateAdminUserModal';
 // Define props for the header
 interface AdminHeaderProps {
   onToggleSidebar: () => void;
-  sidebarOpen: boolean;
 }
 
-const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleSidebar, sidebarOpen }) => {
+const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleSidebar }) => {
   const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -30,15 +29,6 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleSidebar, sidebarOpen 
           <Menu className="w-6 h-6" />
         </button>
         
-        {/* Desktop Toggle Button */} 
-         <button
-          onClick={onToggleSidebar}
-          className="hidden md:inline-flex p-2 rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500"
-          aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-        >
-          {sidebarOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
-        </button>
-
         <h1 className="text-lg md:text-xl font-bold text-gray-800 whitespace-nowrap">Admin Dashboard</h1>
       </div>
       

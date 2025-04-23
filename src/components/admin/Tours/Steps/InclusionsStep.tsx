@@ -162,7 +162,7 @@ const InclusionsStep: React.FC<InclusionsStepProps> = ({ tour, setTour, errors, 
       </div>
       
       {/* Inclusions Section */}
-      <div className="bg-white p-6 rounded-xl shadow-sm">
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
         <div className="flex items-center gap-2 mb-4">
           <ShieldCheck className="w-5 h-5 text-green-600" />
           <h3 className="text-lg font-semibold text-gray-800">What's Included</h3>
@@ -201,7 +201,7 @@ const InclusionsStep: React.FC<InclusionsStepProps> = ({ tour, setTour, errors, 
                 type="text"
                 value={item}
                 onChange={(e) => updateItem('included', index, e.target.value)}
-                className="flex-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                className="flex-1 min-w-0 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
                 placeholder="e.g. Professional tour guide"
                 disabled={isLoading}
               />
@@ -247,7 +247,7 @@ const InclusionsStep: React.FC<InclusionsStepProps> = ({ tour, setTour, errors, 
       </div>
       
       {/* Exclusions Section */}
-      <div className="bg-white p-6 rounded-xl shadow-sm">
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
         <div className="flex items-center gap-2 mb-4">
           <ShieldX className="w-5 h-5 text-red-500" />
           <h3 className="text-lg font-semibold text-gray-800">What's Not Included</h3>
@@ -286,7 +286,7 @@ const InclusionsStep: React.FC<InclusionsStepProps> = ({ tour, setTour, errors, 
                 type="text"
                 value={item}
                 onChange={(e) => updateItem('excluded', index, e.target.value)}
-                className="flex-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                className="flex-1 min-w-0 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
                 placeholder="e.g. International flights"
                 disabled={isLoading}
               />

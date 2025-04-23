@@ -3,7 +3,7 @@ import { Link, useLocation, Navigate } from 'react-router-dom';
 import { 
   X, ChevronRight, LayoutDashboard, Map, Users, 
   Calendar, Route, MessageSquare, Image, FileText, Settings, LogOut,
-  HelpCircle, BookOpen
+  HelpCircle, BookOpen, ChevronLeft
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import AdminHeader from './AdminHeader';
@@ -145,53 +145,64 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           flex flex-col 
           ${sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full'} 
           md:sticky md:translate-x-0 
-          ${sidebarOpen ? 'md:w-64' : 'md:w-20'}
+          md:w-64 /* Always expanded width on desktop */
         `}
       >
-        {/* Sidebar Header */}
-        <div className={`flex items-center h-16 px-4 border-b border-brand-700 flex-shrink-0 ${sidebarOpen ? 'justify-between' : 'justify-center'}`}> 
-          <Link to="/admin" className={`flex items-center space-x-3 ${!sidebarOpen && 'md:hidden'}`}> 
+        {/* Sidebar Header - Modified to include toggle button */}
+        <div className={`flex items-center h-16 px-4 border-b border-brand-700 flex-shrink-0 justify-between`}> 
+          {/* Logo and Title Link - Conditionally shown */}
+          <Link to="/admin" className={`flex items-center space-x-3 overflow-hidden transition-opacity duration-300 ${!sidebarOpen ? 'opacity-0 w-0' : 'opacity-100'}`}> 
              <div className="w-9 h-9 bg-accent-500 rounded-lg flex items-center justify-center flex-shrink-0"><span className="font-bold text-white text-lg">UE</span></div>
             <span className="font-semibold text-white text-lg whitespace-nowrap">Admin Panel</span>
           </Link>
-          {/* Mobile Close Button */} 
+          
+          {/* Collapsed State Logo (Desktop) - Shown only when collapsed */}
+           {!sidebarOpen && !isMobile && (
+             <div className="w-9 h-9 bg-accent-500 rounded-lg flex items-center justify-center flex-shrink-0 mx-auto"><span className="font-bold text-white text-lg">UE</span></div>
+           )}
+
+          {/* Desktop Toggle Button (Moved to Header) */} 
+          <button
+            onClick={toggleSidebar}
+            className={`hidden md:flex items-center justify-center p-2 rounded-md text-brand-300 hover:bg-brand-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white transition-transform duration-300 ease-in-out ${sidebarOpen ? '' : 'rotate-180'}`}
+            aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+          >
+            <ChevronLeft className="w-5 h-5" /> 
+          </button>
+
+          {/* Mobile Close Button */}
           {isMobile && sidebarOpen && ( 
             <button onClick={toggleSidebar} className="p-2 rounded-md text-brand-300 hover:bg-brand-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white" aria-label="Close sidebar"><X className="w-6 h-6" /></button>
           )}
-           {/* Collapsed State Logo (Desktop) */} 
-           {!sidebarOpen && !isMobile && (
-             <div className="w-9 h-9 bg-accent-500 rounded-lg flex items-center justify-center flex-shrink-0"><span className="font-bold text-white text-lg">UE</span></div>
-           )}
         </div>
         
         {/* Sidebar Menu */}
         <div className="flex-grow overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-brand-700 scrollbar-track-brand-800">
-          <nav className={`px-3 py-4 ${!sidebarOpen && 'md:px-1'}`}> 
+          <nav className={`px-3 py-4`}> 
             <ul className="space-y-1.5">
-              {menuItems.map((item) => ( // Removed index from map
-                <li key={item.path || item.title}> {/* Use path or title as key */}
+              {menuItems.map((item) => (
+                <li key={item.path || item.title}> 
                   {item.submenu ? (
                     <>
                       <button 
                         onClick={() => toggleSubmenu(item.title.toLowerCase())} 
                         className={`
                           w-full flex items-center justify-between px-3 py-2.5 rounded-md transition-colors duration-150 ease-in-out group 
-                          ${sidebarOpen ? '' : 'md:justify-center'} 
                           ${isLinkActive(item.path) && !item.submenu.some(sub => location.pathname === sub.path) ? 'bg-brand-700 text-white font-semibold' : 'text-brand-200 hover:bg-brand-700 hover:text-white'}
                         `} 
                         aria-expanded={activeSubmenu === item.title.toLowerCase()}
                       >
-                        <div className={`flex items-center ${sidebarOpen ? 'space-x-3' : 'md:justify-center'}`}> 
-                          <span className={`flex-shrink-0 group-hover:text-white transition-colors duration-150 ${!sidebarOpen && 'md:mx-auto'}`}>{item.icon}</span> 
-                          <span className={`text-sm font-medium ${!sidebarOpen && 'md:hidden'}`}>{item.title}</span> 
+                        <div className={`flex items-center space-x-3`}> 
+                          <span className={`flex-shrink-0 group-hover:text-white transition-colors duration-150`}>{item.icon}</span> 
+                          <span className={`text-sm font-medium`}>{item.title}</span> 
                         </div>
-                        <ChevronRight className={`w-5 h-5 transform transition-transform duration-200 ease-in-out ${activeSubmenu === item.title.toLowerCase() ? 'rotate-90' : ''} ${!sidebarOpen && 'md:hidden'}`} /> 
+                        <ChevronRight className={`w-5 h-5 transform transition-transform duration-200 ease-in-out ${activeSubmenu === item.title.toLowerCase() ? 'rotate-90' : ''}`} /> 
                       </button>
-                      {/* Submenu - Increased max-h */}
-                      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${activeSubmenu === item.title.toLowerCase() ? 'max-h-[500px] mt-1' : 'max-h-0'} ${!sidebarOpen && 'md:hidden'}`}> 
+                      {/* Submenu - Adjusted for collapsed state */}
+                      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${activeSubmenu === item.title.toLowerCase() ? 'max-h-[500px] mt-1' : 'max-h-0'}`}> 
                         <ul className="pl-8 pr-2 py-1 space-y-1 border-l border-brand-700 ml-4">
-                          {item.submenu.map((subItem) => ( // Removed subIndex
-                            <li key={subItem.path}> {/* Use path as key */}
+                          {item.submenu.map((subItem) => (
+                            <li key={subItem.path}> 
                               <Link 
                                 to={subItem.path} 
                                 onClick={isMobile ? toggleSidebar : undefined} 
@@ -202,27 +213,25 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                                     : 'text-brand-300 hover:bg-brand-600 hover:text-white'}
                                 `}
                               >
-                                {/* Removed dot span */}
                                 {subItem.title}
                               </Link>
                             </li>
                           ))}
                         </ul>
                       </div>
-                    </>
+                     </>
                   ) : (
-                    <Link 
-                      to={item.path} 
-                      onClick={isMobile ? toggleSidebar : undefined} 
-                      className={`
-                        flex items-center px-3 py-2.5 rounded-md transition-colors duration-150 ease-in-out group 
-                        ${sidebarOpen ? '' : 'md:justify-center'} 
-                        ${isLinkActive(item.path) ? 'bg-brand-700 text-white font-semibold' : 'text-brand-200 hover:bg-brand-700 hover:text-white'}
-                      `}
-                    >
-                      <span className={`flex-shrink-0 group-hover:text-white transition-colors duration-150 ${sidebarOpen ? 'mr-3' : 'md:mx-auto'}`}>{item.icon}</span> 
-                      <span className={`text-sm font-medium ${!sidebarOpen && 'md:hidden'}`}>{item.title}</span> 
-                    </Link>
+                     <Link 
+                       to={item.path} 
+                       onClick={isMobile ? toggleSidebar : undefined} 
+                       className={`
+                         flex items-center px-3 py-2.5 rounded-md transition-colors duration-150 ease-in-out group 
+                         ${isLinkActive(item.path) ? 'bg-brand-700 text-white font-semibold' : 'text-brand-200 hover:bg-brand-700 hover:text-white'}
+                       `}
+                     >
+                       <span className={`flex-shrink-0 group-hover:text-white transition-colors duration-150 mr-3`}>{item.icon}</span> 
+                       <span className={`text-sm font-medium`}>{item.title}</span> 
+                     </Link>
                   )}
                 </li>
               ))}
@@ -230,8 +239,15 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           </nav>
         </div>
         
-        {/* Sidebar Footer */}
+        {/* Sidebar Footer - Removed Toggle Button */}
         <div className={`px-4 py-3 border-t border-brand-700 flex-shrink-0 ${!sidebarOpen && 'md:px-2'}`}> 
+          {/* Desktop Toggle Button (REMOVED from here) */}
+          {/* 
+          <button ...>
+             ...
+          </button>
+          */}
+        
           <button onClick={handleSignOut} className={`w-full flex items-center px-3 py-2 rounded-md text-brand-200 hover:bg-red-600 hover:text-white transition-colors duration-150 ease-in-out group ${!sidebarOpen && 'md:justify-center'}`}> 
              <LogOut className={`w-5 h-5 flex-shrink-0 group-hover:text-white transition-colors duration-150 ${sidebarOpen ? 'mr-3' : 'md:mx-auto'}`} /> 
              <span className={`text-sm font-medium ${!sidebarOpen && 'md:hidden'}`}>Sign Out</span> 
@@ -241,8 +257,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       
       {/* Main Content Area */} 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <AdminHeader onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6 md:p-8" id="main-content">
+        <AdminHeader onToggleSidebar={toggleSidebar} />
+        <main 
+          key={location.pathname}
+          className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-4 md:p-8 animate-fadeIn" 
+          id="main-content"
+        >
           {children}
         </main>
       </div>

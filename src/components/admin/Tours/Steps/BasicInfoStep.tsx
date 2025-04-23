@@ -147,8 +147,8 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
   return (
     <div className="space-y-6">
       <DetailsPanelLayout title="General Information">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="col-span-1 md:col-span-2">
             <InputField
               label="Tour Title"
               id="title"
@@ -161,7 +161,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
             />
           </div>
 
-          <div className="col-span-2">
+          <div className="col-span-1 md:col-span-2">
             <TextareaField
               label="Description"
               id="description"
@@ -281,7 +281,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
             />
           </div>
 
-          <div className="col-span-2 flex items-center space-x-2 pt-4">
+          <div className="col-span-1 md:col-span-2 flex items-center space-x-2 pt-4">
             <CheckboxField
               label="Feature on homepage"
               name="featured"

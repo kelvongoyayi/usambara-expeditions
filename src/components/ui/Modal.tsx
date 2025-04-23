@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -16,6 +16,21 @@ const Modal: React.FC<ModalProps> = ({
   children,
   size = 'md' // Default size
 }) => {
+
+  // Effect to lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset'; // Or 'auto' if needed
+    }
+
+    // Cleanup function to ensure scroll is restored when component unmounts
+    return () => {
+      document.body.style.overflow = 'unset'; // Or 'auto'
+    };
+  }, [isOpen]); // Dependency array ensures this runs only when isOpen changes
+
   if (!isOpen) return null;
 
   // Determine modal width based on size prop

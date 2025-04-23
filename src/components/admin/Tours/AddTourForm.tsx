@@ -127,7 +127,9 @@ const AddTourForm: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const goToNextStep = () => {
+  const goToNextStep = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    if (e) e.preventDefault();
+
     if (validateCurrentStep()) {
       const currentIndex = steps.findIndex(step => step.id === currentStep);
       if (currentIndex < steps.length - 1) {
@@ -335,89 +337,80 @@ const AddTourForm: React.FC = () => {
         <span>Back to tours</span>
       </button>
 
-      <form onSubmit={handleSubmit} className="space-y-8 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        {/* Step Progress Indicator */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row justify-between mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Create New Tour</h1>
-            <div className="text-sm font-medium text-brand-600">Step {steps.findIndex(s => s.id === currentStep) + 1} of {steps.length}</div>
+      <form onSubmit={handleSubmit} className="space-y-8 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        {/* Step Progress Indicator - Updated UI */}
+        <div className="mb-10">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2 sm:mb-0">Create New Tour</h1>
+            <div className="text-sm font-medium text-brand-600">Step {steps.findIndex(s => s.id === currentStep) + 1} of {steps.length}: {steps.find(s => s.id === currentStep)?.label}</div>
           </div>
           
-          <div className="relative">
-            {/* Progress Bar Background */}
-            <div className="hidden sm:block absolute top-1/2 left-0 w-full h-2 bg-gray-100 rounded-full -translate-y-1/2"></div>
-            
-            {/* Progress Bar Fill */}
-            <div 
-              className="hidden sm:block absolute top-1/2 left-0 h-2 bg-gradient-to-r from-brand-500 to-brand-600 rounded-full -translate-y-1/2 transition-all duration-300"
-              style={{ 
-                width: `${(steps.findIndex(s => s.id === currentStep) / (steps.length - 1)) * 100}%` 
-              }}
-            ></div>
-            
-            {/* Steps */}
-            <div className="flex flex-col sm:flex-row sm:justify-between gap-4 sm:gap-0 relative z-10">
-              {steps.map((step, index) => {
-                const isActive = currentStep === step.id;
-                const isCompleted = steps.findIndex(s => s.id === currentStep) > index;
-                
-                return (
-                  <div 
-                    key={step.id} 
-                    className={`flex items-start sm:flex-col sm:items-center ${index !== 0 ? 'sm:flex-1' : ''}`}
-                  >
+          {/* Steps Container */}
+          <div className="flex items-start justify-between">
+            {steps.map((step, index) => {
+              const isActive = currentStep === step.id;
+              const isCompleted = steps.findIndex(s => s.id === currentStep) > index;
+
+              return (
+                <div key={step.id} className="flex-1 flex flex-col items-center">
+                  {/* Step Marker and Connection */}
+                  <div className="relative flex items-center w-full justify-center">
+                    {/* Left Connecting Line (not for first item) */}
+                    {index > 0 && (
+                      <div className={`absolute left-0 top-1/2 transform -translate-y-1/2 w-1/2 h-1 ${isCompleted || isActive ? 'bg-brand-600' : 'bg-gray-200'}`}></div>
+                    )}
+                    
+                    {/* Step Circle */}
                     <div 
                       className={`
-                        flex items-center justify-center min-w-12 h-12 rounded-full
-                        transition-all duration-300 ease-in-out
+                        relative z-10 flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 ease-in-out
                         ${isActive 
                           ? 'bg-brand-600 text-white ring-4 ring-brand-100' 
                           : isCompleted 
-                            ? 'bg-green-500 text-white' 
-                            : 'bg-white text-gray-400 border-2 border-gray-200'
+                            ? 'bg-brand-600 text-white' 
+                            : 'bg-white text-gray-400 border-2 border-gray-200 hover:border-brand-300'
                         }
                       `}
                     >
                       {isCompleted ? (
-                        <Check className="w-6 h-6" />
+                        <Check className="w-5 h-5" />
                       ) : (
                         <span className="text-lg font-medium">{index + 1}</span>
                       )}
                     </div>
-                    
-                    <div className="ml-4 sm:ml-0 sm:mt-3 sm:text-center">
-                      <div 
-                        className={`
-                          font-semibold text-base
-                          ${isActive 
-                            ? 'text-brand-600' 
-                            : isCompleted 
-                              ? 'text-green-500' 
-                              : 'text-gray-500'
-                          }
-                        `}
-                      >
-                        {step.label}
-                      </div>
-                      <p 
-                        className={`
-                          text-sm mt-1 
-                          ${isActive ? 'text-gray-700' : 'text-gray-500'}
-                          ${!isActive && !isCompleted ? 'hidden sm:block' : ''}
-                        `}
-                      >
-                        {step.description}
-                      </p>
-                    </div>
+
+                    {/* Right Connecting Line (not for last item) */}
+                    {index < steps.length - 1 && (
+                      <div className={`absolute right-0 top-1/2 transform -translate-y-1/2 w-1/2 h-1 ${isCompleted ? 'bg-brand-600' : 'bg-gray-200'}`}></div>
+                    )}
                   </div>
-                );
-              })}
-            </div>
+
+                  {/* Step Label & Description */}
+                  <div className="mt-3 text-center px-2">
+                    <div 
+                      className={`
+                        font-semibold text-sm md:text-base
+                        ${isActive 
+                          ? 'text-brand-600' 
+                          : isCompleted 
+                            ? 'text-brand-600' 
+                            : 'text-gray-500'
+                        }
+                      `}
+                    >
+                      {step.label}
+                    </div>
+                    {/* Optional: Hide description on mobile or for non-active steps */}
+                    {/* <p className={`hidden sm:block text-xs mt-1 text-gray-400 ${!isActive && 'sm:hidden'}`}>{step.description}</p> */}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* Current Step Content */}
-        <div className="bg-gray-50 p-6 rounded-xl">
+        {/* Current Step Content - Removed gray wrapper */}
+        <div /* className="bg-gray-50 p-4 sm:p-6 rounded-xl" */ >
           {renderStepContent()}
         </div>
 

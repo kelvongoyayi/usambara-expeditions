@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Map, Route, Clock, Flag, AlertCircle, Plus, Trash2, GripVertical, ChevronUp, ChevronDown, X, Coffee, Info } from 'lucide-react';
+import { Calendar, Clock, Plus, Trash2, ChevronUp, ChevronDown, X, Info } from 'lucide-react';
 
 // Define the itinerary day type to match database requirements
 interface ItineraryDay {
@@ -11,7 +11,7 @@ interface ItineraryDay {
   distance?: string;
   difficulty?: string;
   accommodation?: string;
-  meals?: string[] | string; // Allow both string and string[] for flexibility
+  meals?: string[]; // Changed to always be string[] internally
   activities?: string[];
   // Additional fields for database compatibility
   elevation?: string;
@@ -50,7 +50,7 @@ const ItineraryStep: React.FC<ItineraryStepProps> = ({
         setExpanded(formattedItinerary[0].id);
       }
     }
-  }, []);
+  }, [formValues.itinerary]);
   
   // Convert JSON object to array if needed
   const convertJsonToArray = (itineraryJson: any): ItineraryDay[] => {
@@ -88,6 +88,22 @@ const ItineraryStep: React.FC<ItineraryStepProps> = ({
   
   // Ensure each itinerary day has the proper structure
   const ensureItineraryDayStructure = (day: any): ItineraryDay => {
+    // Ensure meals is always an array of strings
+    let processedMeals: string[] = [];
+    if (Array.isArray(day.meals)) {
+      processedMeals = day.meals.filter((m): m is string => typeof m === 'string' && m.trim() !== '');
+    } else if (typeof day.meals === 'string' && day.meals.trim()) {
+      processedMeals = day.meals.split(',').map((m: string) => m.trim()).filter(Boolean);
+    }
+
+    // Ensure activities is always an array of strings
+    let processedActivities: string[] = [];
+    if (Array.isArray(day.activities)) {
+        processedActivities = day.activities.filter((a): a is string => typeof a === 'string' && a.trim() !== '');
+    } else if (typeof day.activities === 'string' && day.activities.trim()) {
+        processedActivities = day.activities.split(',').map((a: string) => a.trim()).filter(Boolean);
+    }
+
     return {
       id: day.id || createId(),
       day_number: day.day_number || day.day || 1,
@@ -97,18 +113,8 @@ const ItineraryStep: React.FC<ItineraryStepProps> = ({
       distance: day.distance || '',
       difficulty: day.difficulty || 'Moderate',
       accommodation: day.accommodation || '',
-      // Ensure meals is always an array
-      meals: Array.isArray(day.meals) 
-        ? day.meals 
-        : (typeof day.meals === 'string' 
-            ? day.meals.split(',').map((m: string) => m.trim()).filter(Boolean) 
-            : []),
-      // Ensure activities is always an array
-      activities: Array.isArray(day.activities) 
-        ? day.activities 
-        : (typeof day.activities === 'string' 
-            ? day.activities.split(',').map((a: string) => a.trim()).filter(Boolean) 
-            : []),
+      meals: processedMeals, // Use processed array
+      activities: processedActivities, // Use processed array
       elevation: day.elevation || ''
     };
   };
@@ -183,16 +189,48 @@ const ItineraryStep: React.FC<ItineraryStepProps> = ({
     }
   };
   
-  // Update a specific day's data
-  const updateDay = (id: string, field: string, value: any) => {
+  // Update a specific day's data (modified for meals/activities array)
+  const updateDay = (id: string, field: keyof ItineraryDay, value: any) => {
     const updatedItinerary = itinerary.map(day => {
       if (day.id === id) {
+        // Handle array updates separately if needed, otherwise direct assignment
         return { ...day, [field]: value };
       }
       return day;
     });
-    
     setItinerary(updatedItinerary);
+  };
+  
+  // Add meal tag
+  const addMeal = (dayId: string, meal: string) => {
+    if (!meal || !meal.trim()) return;
+    setItinerary(prevItinerary => 
+      prevItinerary.map(day => {
+        if (day.id === dayId) {
+          const currentMeals = Array.isArray(day.meals) ? day.meals : [];
+          if (!currentMeals.includes(meal.trim())) { // Avoid duplicates
+            return { ...day, meals: [...currentMeals, meal.trim()] };
+          }
+        }
+        return day;
+      })
+    );
+  };
+
+  // Remove meal tag
+  const removeMeal = (dayId: string, indexToRemove: number) => {
+    setItinerary(prevItinerary => 
+      prevItinerary.map(day => {
+        if (day.id === dayId) {
+          const currentMeals = Array.isArray(day.meals) ? [...day.meals] : [];
+          if (indexToRemove >= 0 && indexToRemove < currentMeals.length) {
+            currentMeals.splice(indexToRemove, 1);
+            return { ...day, meals: currentMeals };
+          }
+        }
+        return day;
+      })
+    );
   };
   
   // Move a day up in the order
@@ -423,9 +461,9 @@ const ItineraryStep: React.FC<ItineraryStepProps> = ({
           {/* Add a smooth transition for the expanded content */}
           <div className={`transition-all duration-300 ${expanded === day.id ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
             {expanded === day.id && (
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="col-span-2">
+                  <div className="col-span-1 md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2 flex justify-between">
                       <span>Description <span className="text-red-500">*</span></span>
                       <span className={`text-xs ${day.description.length > 300 ? 'text-amber-600' : 'text-gray-500'}`}>
@@ -525,102 +563,69 @@ const ItineraryStep: React.FC<ItineraryStepProps> = ({
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Details
+                      Meals Section - Updated UI
                     </label>
                     
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-xs text-gray-500">Location</label>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Map className="w-4 h-4 text-brand-400" />
-                          <input
-                            type="text"
-                            value={day.location || ''}
-                            onChange={(e) => updateDay(day.id, 'location', e.target.value)}
-                            placeholder="Location"
-                            className="flex-1 p-1.5 border border-gray-300 rounded-md text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label className="text-xs text-gray-500">Distance</label>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Route className="w-4 h-4 text-gray-400" />
-                          <input
-                            type="text"
-                            value={day.distance || ''}
-                            onChange={(e) => updateDay(day.id, 'distance', e.target.value)}
-                            placeholder="e.g. 5 km"
-                            className="flex-1 p-1.5 border border-gray-300 rounded-md text-sm"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label className="text-xs text-gray-500">Difficulty</label>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Flag className="w-4 h-4 text-gray-400" />
-                          <select
-                            value={day.difficulty || 'Moderate'}
-                            onChange={(e) => updateDay(day.id, 'difficulty', e.target.value)}
-                            className="flex-1 p-1.5 border border-gray-300 rounded-md text-sm appearance-none"
-                          >
-                            <option value="Easy">Easy</option>
-                            <option value="Moderate">Moderate</option>
-                            <option value="Challenging">Challenging</option>
-                            <option value="Difficult">Difficult</option>
-                            <option value="NA">Not Applicable</option>
-                          </select>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label className="text-xs text-gray-500">Accommodation</label>
-                        <div className="flex items-center gap-2 mt-1">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-brand-400">
-                            <path d="M2 22v-5h20v5"></path>
-                            <path d="M2 9v1l10 5 10-5V9l-10 5-10-5Z"></path>
-                            <path d="M2 11V9l10-5 10 5v2"></path>
-                          </svg>
-                          <input
-                            type="text"
-                            value={day.accommodation || ''}
-                            onChange={(e) => updateDay(day.id, 'accommodation', e.target.value)}
-                            placeholder="e.g. Mountain Lodge"
-                            className="flex-1 p-1.5 border border-gray-300 rounded-md text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-                          />
-                        </div>
-                      </div>
-                      
-                      {/* Meals Field with improved interface */}
-                      <div>
-                        <label className="text-xs text-gray-500 flex items-center gap-1">
-                          Meals
-                          <span className="text-xs text-gray-400 italic">(comma separated)</span>
-                        </label>
-                        <div className="flex items-center gap-2 mt-1 relative group">
-                          <Coffee className="w-4 h-4 text-gray-400" />
-                          <input
-                            type="text"
-                            value={Array.isArray(day.meals) ? day.meals.join(', ') : day.meals || ''}
-                            onChange={(e) => {
-                              const mealsValue = e.target.value;
-                              // Convert comma-separated string to array of trimmed values
-                              const mealsArray = mealsValue 
-                                ? mealsValue.split(',').map(item => item.trim()).filter(Boolean) 
-                                : [];
-                              updateDay(day.id, 'meals', mealsArray);
-                            }}
-                            placeholder="e.g. Breakfast, Lunch, Dinner"
-                            className="flex-1 p-1.5 border border-gray-300 rounded-md text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-                          />
-                          <div className="absolute right-0 -top-6 bg-gray-800 text-white text-xs p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                            <div className="absolute w-2 h-2 bg-gray-800 rotate-45 -bottom-1 right-2"></div>
-                            Use B, L, D or write full meal names
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Meals Included</label>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {day.meals && day.meals.map((meal, idx) => (
+                          <div key={idx} className="flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-100 rounded px-2 py-1 text-sm">
+                            <span>{meal}</span>
+                            <button 
+                              type="button"
+                              onClick={() => removeMeal(day.id, idx)}
+                              className="text-blue-400 hover:text-blue-600"
+                              aria-label={`Remove ${meal}`}
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
                           </div>
-                        </div>
-                        <p className="text-xs text-gray-400 mt-1">Separate multiple meals with commas</p>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          placeholder="Add meal (e.g., Breakfast)"
+                          className="flex-1 p-2 border border-gray-300 rounded-md text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                          id={`add-meal-${day.id}`}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                              e.preventDefault();
+                              addMeal(day.id, e.currentTarget.value);
+                              e.currentTarget.value = '';
+                            }
+                          }}
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const input = document.getElementById(`add-meal-${day.id}`) as HTMLInputElement;
+                            if (input && input.value.trim()) {
+                              addMeal(day.id, input.value);
+                              input.value = '';
+                            }
+                          }}
+                          className="p-2 bg-brand-500 text-white rounded-md hover:bg-brand-600"
+                          aria-label="Add Meal"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                      
+                      {/* Quick-Add Common Meals */}
+                      <div className="mt-3 flex flex-wrap gap-1">
+                        <span className="text-xs text-gray-500 mr-1">Quick add:</span>
+                        {['Breakfast', 'Lunch', 'Dinner', 'Snacks'].map((meal) => (
+                          <button
+                            key={meal}
+                            type="button"
+                            onClick={() => addMeal(day.id, meal)}
+                            className="px-1.5 py-0.5 text-xs bg-gray-100 text-gray-600 border border-gray-200 rounded hover:bg-gray-200 transition-colors"
+                          >
+                            + {meal}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>

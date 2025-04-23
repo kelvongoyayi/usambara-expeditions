@@ -144,7 +144,9 @@ const EditTour: React.FC = () => {
   };
 
   // Form navigation
-  const goToNextStep = () => {
+  const goToNextStep = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    if (e) e.preventDefault(); // Prevent potential default form submission
+
     if (validateCurrentStep()) {
       const currentIndex = steps.findIndex(step => step.id === currentStep);
       if (currentIndex < steps.length - 1) {
