@@ -16,10 +16,10 @@ interface ImagesStepProps {
   resetMainImage: () => void;
   handleAddImageUrl: () => void;
   handleAddGalleryUrl: () => void;
+  setImageUrlInput: (url: string) => void;
+  setGalleryUrlInput: (url: string) => void;
   imageUrlInput: string;
   galleryUrlInput: string;
-  setImageUrlInput: React.Dispatch<React.SetStateAction<string>>;
-  setGalleryUrlInput: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const ImagesStep: React.FC<ImagesStepProps> = ({
@@ -35,225 +35,177 @@ const ImagesStep: React.FC<ImagesStepProps> = ({
   resetMainImage,
   handleAddImageUrl,
   handleAddGalleryUrl,
-  imageUrlInput,
-  galleryUrlInput,
   setImageUrlInput,
-  setGalleryUrlInput
+  setGalleryUrlInput,
+  imageUrlInput,
+  galleryUrlInput
 }) => {
-  // Use either the uploaded preview or the existing image from formData
-  const mainImageUrl = imagePreview || formData.image_url;
-  // Combine existing gallery with newly uploaded images
-  const galleryImages = [...(formData.gallery || []), ...galleryPreview];
-
-  const handleFileUpload = (files: File[]) => {
-    if (files.length > 0) {
-      const mockEvent = {
-        target: {
-          files: files
-        }
-      } as unknown as React.ChangeEvent<HTMLInputElement>;
-      
-      handleMainImageUpload(mockEvent);
-    }
-  };
-
-  const handleGalleryFileUpload = (files: File[]) => {
-    if (files.length > 0) {
-      const mockEvent = {
-        target: {
-          files: files
-        }
-      } as unknown as React.ChangeEvent<HTMLInputElement>;
-      
-      handleGalleryImageUpload(mockEvent);
-    }
-  };
-  
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Main Image and Gallery Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
-        {/* Main Image Section */}
-        <div className="bg-white p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl border border-gray-100">
-          <div className="flex items-center gap-2 mb-3 sm:mb-4">
-            <Image className="w-4 h-4 sm:w-5 sm:h-5 text-accent-600" />
-            <h3 className="text-base sm:text-lg font-semibold text-gray-800">Main Event Image</h3>
-          </div>
+    <div className="space-y-6 p-6">
+      <h2 className="text-xl font-semibold text-gray-900 border-b pb-3">Event Images</h2>
+      
+      {/* Main Image Section */}
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1 required">Main Event Image</label>
+          <p className="text-sm text-gray-500 mb-4">This image will be displayed as the primary image for your event.</p>
           
-          {!mainImageUrl ? (
-            <FileUploadField
-              accept="image/*"
-              maxSize={5}
-              onChange={handleFileUpload}
-              helperText="Upload the main image for your event (recommended size: 1200×800px)"
-              error={errors.image_url}
-              multiple={false}
-              disabled={uploading}
-            />
-          ) : (
-            <div className="relative">
-              <img 
-                src={mainImageUrl} 
-                alt="Main event image" 
-                className="w-full h-36 sm:h-48 object-cover rounded-lg"
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Image Upload */}
+            <div>
+              <FileUploadField
+                accept="image/*"
+                label="Upload Image"
+                onChange={handleMainImageUpload}
+                loading={uploading}
+                progress={progress}
+                Icon={Camera}
+                hint="Upload a high-quality image (JPEG, PNG)"
+                className="bg-white border border-accent-200 hover:border-accent-300"
               />
-              <button 
-                onClick={resetMainImage} 
-                className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              
+              {/* URL Input Option */}
+              <div className="mt-4 space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Or use an image URL</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={imageUrlInput}
+                    onChange={(e) => setImageUrlInput(e.target.value)}
+                    placeholder="https://example.com/image.jpg"
+                    className="flex-1 rounded-md border border-gray-300 focus:border-accent-300 focus:ring focus:ring-accent-200 focus:ring-opacity-50"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddImageUrl}
+                    className="px-3 py-2 border border-accent-300 rounded-md bg-accent-50 text-accent-700 hover:bg-accent-100 transition-colors flex items-center"
+                  >
+                    <Link className="w-4 h-4 mr-1" />
+                    Add
+                  </button>
+                </div>
+              </div>
             </div>
-          )}
-          
-          {/* Image URL Input Option */}
-          <div className="mt-3 sm:mt-4 border-t pt-3 sm:pt-4">
-            <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-2">Or add image by URL</h4>
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                value={imageUrlInput}
-                onChange={(e) => setImageUrlInput(e.target.value)}
-                placeholder="Paste image URL here"
-                className="flex-1 min-w-0 p-2 border rounded-md text-xs sm:text-sm"
-                disabled={uploading}
-              />
-              <button
-                type="button"
-                onClick={handleAddImageUrl}
-                className="px-2 sm:px-3 py-2 bg-accent-600 text-white rounded-md text-xs sm:text-sm flex items-center whitespace-nowrap"
-                disabled={!imageUrlInput || uploading}
-              >
-                <Link className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                Add
-              </button>
+            
+            {/* Image Preview */}
+            <div>
+              {imagePreview ? (
+                <div className="relative rounded-lg overflow-hidden border border-gray-200 aspect-video bg-gray-50">
+                  <img
+                    src={imagePreview}
+                    alt="Event main image preview"
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={resetMainImage}
+                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center rounded-lg border border-gray-200 bg-gray-50 aspect-video text-gray-400">
+                  <div className="text-center p-4">
+                    <Image className="w-10 h-10 mx-auto mb-2 opacity-25" />
+                    <p>No image uploaded yet</p>
+                  </div>
+                </div>
+              )}
+              {errors?.image_url && <p className="text-red-500 mt-1 text-sm">{errors.image_url}</p>}
             </div>
-            {errors?.image_url_input && (
-              <p className="text-red-500 text-xs mt-1 flex items-center">
-                <AlertCircle className="h-3 w-3 mr-1" />
-                {errors.image_url_input}
-              </p>
-            )}
           </div>
         </div>
         
-        {/* Gallery Section */}
-        <div className="bg-white p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl border border-gray-100">
-          <div className="flex items-center gap-2 mb-3 sm:mb-4">
-            <Camera className="w-4 h-4 sm:w-5 sm:h-5 text-accent-500" />
-            <h3 className="text-base sm:text-lg font-semibold text-gray-800">Image Gallery</h3>
-          </div>
+        {/* Gallery Images Section */}
+        <div className="mt-8">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Gallery Images</label>
+          <p className="text-sm text-gray-500 mb-4">Add additional images to showcase more aspects of your event. These will appear in the gallery section.</p>
           
-          <FileUploadField
-            accept="image/*"
-            maxSize={5}
-            onChange={handleGalleryFileUpload}
-            helperText="Upload additional images for your event gallery (up to 10 images)"
-            error={errors.gallery}
-            multiple={true}
-            disabled={uploading || (galleryImages.length >= 10)}
-          />
-          
-          {galleryImages.length >= 10 && (
-            <p className="text-amber-500 text-xs mt-2 flex items-center">
-              <AlertCircle className="h-3 w-3 mr-1" />
-              Maximum of 10 gallery images allowed. Remove some images to add more.
-            </p>
-          )}
-          
-          {/* Gallery URL Input Option */}
-          <div className="mt-3 sm:mt-4 border-t pt-3 sm:pt-4">
-            <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-2">Or add gallery image by URL</h4>
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                value={galleryUrlInput}
-                onChange={(e) => setGalleryUrlInput(e.target.value)}
-                placeholder="Paste image URL here"
-                className="flex-1 min-w-0 p-2 border rounded-md text-xs sm:text-sm"
-                disabled={uploading || (galleryImages.length >= 10)}
+          {/* Upload Controls */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <FileUploadField
+                accept="image/*"
+                label="Upload Gallery Image"
+                onChange={handleGalleryImageUpload}
+                loading={uploading}
+                progress={progress}
+                Icon={Camera}
+                hint="Upload multiple images (JPEG, PNG)"
+                multiple
+                className="bg-white border border-accent-200 hover:border-accent-300"
               />
-              <button
-                type="button"
-                onClick={handleAddGalleryUrl}
-                className="px-2 sm:px-3 py-2 bg-accent-500 text-white rounded-md text-xs sm:text-sm flex items-center whitespace-nowrap"
-                disabled={!galleryUrlInput || uploading || (galleryImages.length >= 10)}
-              >
-                <Link className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                Add
-              </button>
             </div>
-            {errors?.gallery_url_input && (
-              <p className="text-red-500 text-xs mt-1 flex items-center">
-                <AlertCircle className="h-3 w-3 mr-1" />
-                {errors.gallery_url_input}
-              </p>
-            )}
+            
+            {/* URL Input Option */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Or use an image URL</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={galleryUrlInput}
+                  onChange={(e) => setGalleryUrlInput(e.target.value)}
+                  placeholder="https://example.com/gallery-image.jpg"
+                  className="flex-1 rounded-md border border-gray-300 focus:border-accent-300 focus:ring focus:ring-accent-200 focus:ring-opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddGalleryUrl}
+                  className="px-3 py-2 border border-accent-300 rounded-md bg-accent-50 text-accent-700 hover:bg-accent-100 transition-colors flex items-center"
+                >
+                  <Link className="w-4 h-4 mr-1" />
+                  Add
+                </button>
+              </div>
+            </div>
           </div>
+          
+          {/* Gallery Preview */}
+          {galleryPreview && galleryPreview.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {galleryPreview.map((image, index) => (
+                <div key={index} className="relative rounded-lg overflow-hidden border border-gray-200 aspect-square bg-gray-50">
+                  <img
+                    src={image}
+                    alt={`Gallery image ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeGalleryImage(index)}
+                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
+              <Image className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+              <p className="text-gray-500">No gallery images added yet</p>
+              <p className="text-sm text-gray-400 mt-1">Images will appear here after uploading</p>
+            </div>
+          )}
+          {errors?.gallery && <p className="text-red-500 mt-1 text-sm">{errors.gallery}</p>}
         </div>
       </div>
       
-      {/* Gallery Preview Section */}
-      {galleryImages.length > 0 && (
-        <div className="bg-white p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl border border-gray-100">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">Gallery Preview</h3>
-          
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4">
-            {galleryImages.map((img, index) => (
-              <div key={index} className="relative group">
-                <img 
-                  src={img} 
-                  alt={`Gallery image ${index + 1}`} 
-                  className="w-full h-24 sm:h-32 object-cover rounded-lg"
-                />
-                <button 
-                  onClick={() => removeGalleryImage(index)} 
-                  className="absolute top-1 sm:top-2 right-1 sm:right-2 p-1 bg-red-500 text-white rounded-full opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-                >
-                  <X className="w-3 h-3 sm:w-4 sm:h-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      
-      {/* Upload Progress */}
-      {uploading && (
-        <div className="bg-accent-50 border border-accent-200 rounded-lg p-3 sm:p-4">
-          <div className="flex items-center justify-between mb-1 sm:mb-2">
-            <span className="text-xs sm:text-sm font-medium text-accent-700">Uploading...</span>
-            <span className="text-xs sm:text-sm text-accent-700">{Math.round(progress)}%</span>
-          </div>
-          <div className="w-full bg-accent-100 rounded-full h-1.5 sm:h-2">
-            <div 
-              className="bg-accent-600 h-1.5 sm:h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
-        </div>
-      )}
-      
-      {/* Information Messages */}
-      {!formData.image_url && !uploading && !mainImageUrl && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-3 sm:px-4 py-2 sm:py-3 rounded-lg flex items-center">
-          <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0 text-amber-500" />
-          <div>
-            <p className="text-xs sm:text-sm font-medium">A main event image is highly recommended</p>
-            <p className="text-xs mt-1 text-amber-700">Events with appealing images receive more attendee registrations.</p>
-          </div>
-        </div>
-      )}
-      
-      {(formData.image_url || mainImageUrl) && (
-        <div className="bg-green-50 border border-green-200 text-green-800 px-3 sm:px-4 py-2 sm:py-3 rounded-lg flex items-center">
-          <Image className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0 text-green-500" />
-          <div>
-            <p className="text-xs sm:text-sm font-medium">Main image added successfully!</p>
-            <p className="text-xs mt-1 text-green-700">You can add more images to the gallery or proceed to the next step.</p>
-          </div>
-        </div>
-      )}
+      {/* Tips Section */}
+      <div className="mt-8 bg-accent-50 rounded-lg p-4 border border-accent-100">
+        <h3 className="font-medium text-accent-800 mb-2 flex items-center">
+          <AlertCircle className="w-4 h-4 mr-2" />
+          Tips for Great Event Images
+        </h3>
+        <ul className="text-sm text-accent-700 space-y-1 list-disc list-inside">
+          <li>Use high-quality, well-lit images that showcase your event clearly</li>
+          <li>Main image should be landscape orientation (16:9 ratio works best)</li>
+          <li>Include images that show different aspects of the event experience</li>
+          <li>Avoid text overlays in images - add important information in the description</li>
+          <li>Optimize image size (1-2MB per image) for faster loading</li>
+        </ul>
+      </div>
     </div>
   );
 };

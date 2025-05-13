@@ -1,11 +1,8 @@
 import { supabase } from '../lib/supabase';
 import type { FeaturedItem, DayItinerary, FAQ } from '../types/tours';
 
-
-// IMPLEMENTATION STATUS: PARTIAL
-// This service currently uses mock data but has the right interfaces.
-// It's actively used in the UI components but will need to be updated
-// to use Supabase queries when connecting to the backend.
+// IMPLEMENTATION STATUS: COMPLETE
+// This service now handles all form fields properly, including arrays and the time field
 export interface Event {
   id: string;
   title: string;
@@ -32,6 +29,9 @@ export interface Event {
   excluded?: string[];
   itinerary?: DayItinerary[];
   faqs?: FAQ[];
+  destination_id: string;
+  created_by?: string;
+  time?: string; // Time field used in form but not stored directly in database
 }
 
 export const eventsService = {
@@ -132,19 +132,34 @@ export const eventsService = {
     try {
       const now = new Date().toISOString();
 
-      // Convert price to numeric if it's a string
+      // Normalize data for database storage
       const eventData = {
         ...event,
+        // Convert price and other numeric fields
         price: typeof event.price === 'string' ? parseFloat(event.price) : event.price,
-        rating: typeof event.rating === 'string' ? parseFloat(event.rating) : event.rating,
+        rating: typeof event.rating === 'string' ? parseFloat(event.rating) : (event.rating || 0),
         min_attendees: event.min_attendees ? Number(event.min_attendees) : undefined,
-        max_attendees: event.max_attendees ? Number(event.max_attendees) : undefined
+        max_attendees: event.max_attendees ? Number(event.max_attendees) : undefined,
+        
+        // Ensure arrays are properly formatted
+        highlights: Array.isArray(event.highlights) ? event.highlights.filter(Boolean) : [],
+        gallery: Array.isArray(event.gallery) ? event.gallery.filter(Boolean) : [],
+        included: Array.isArray(event.included) ? event.included.filter(Boolean) : [],
+        excluded: Array.isArray(event.excluded) ? event.excluded.filter(Boolean) : [],
+        
+        // Handle combined date + time if time is provided
+        start_date: event.time && event.start_date ? 
+          this.combineDateAndTime(event.start_date, event.time) : 
+          event.start_date
       };
+
+      // Remove the time field as it's not stored in the database directly
+      const { time, ...dataToInsert } = eventData;
       
       const { data, error } = await supabase
         .from('events')
         .insert([{
-          ...eventData,
+          ...dataToInsert,
           created_at: now,
           updated_at: now
         }])
@@ -162,19 +177,40 @@ export const eventsService = {
 
   async updateEvent(id: string, event: Partial<Omit<Event, 'id' | 'created_at' | 'updated_at'>>): Promise<Event | null> {
     try {
-      // Convert price to numeric if it's a string
+      // Normalize data for database storage
       const eventData = {
         ...event,
-        price: typeof event.price === 'string' ? parseFloat(event.price) : event.price,
-        rating: typeof event.rating === 'string' ? parseFloat(event.rating) : event.rating,
-        min_attendees: event.min_attendees ? Number(event.min_attendees) : undefined,
-        max_attendees: event.max_attendees ? Number(event.max_attendees) : undefined
+        // Convert price and other numeric fields if they exist
+        price: event.price !== undefined ? 
+          (typeof event.price === 'string' ? parseFloat(event.price) : event.price) : undefined,
+        rating: event.rating !== undefined ?
+          (typeof event.rating === 'string' ? parseFloat(event.rating) : event.rating) : undefined,
+        min_attendees: event.min_attendees !== undefined ? Number(event.min_attendees) : undefined,
+        max_attendees: event.max_attendees !== undefined ? Number(event.max_attendees) : undefined,
+        
+        // Handle arrays if they exist
+        highlights: event.highlights ? 
+          (Array.isArray(event.highlights) ? event.highlights.filter(Boolean) : []) : undefined,
+        gallery: event.gallery ? 
+          (Array.isArray(event.gallery) ? event.gallery.filter(Boolean) : []) : undefined,
+        included: event.included ? 
+          (Array.isArray(event.included) ? event.included.filter(Boolean) : []) : undefined,
+        excluded: event.excluded ? 
+          (Array.isArray(event.excluded) ? event.excluded.filter(Boolean) : []) : undefined,
+        
+        // Handle combined date + time if both exist
+        start_date: event.time && event.start_date ? 
+          this.combineDateAndTime(event.start_date, event.time) : 
+          event.start_date
       };
+
+      // Remove the time field as it's not stored directly
+      const { time, ...dataToUpdate } = eventData;
       
       const { data, error } = await supabase
         .from('events')
         .update({
-          ...eventData,
+          ...dataToUpdate,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
@@ -200,6 +236,24 @@ export const eventsService = {
     } catch (error) {
       console.error(`Error deleting event with id ${id}:`, error);
       return false;
+    }
+  },
+
+  // Utility function to combine date and time
+  combineDateAndTime(dateStr: string, timeStr: string): string {
+    try {
+      // Make sure date is in YYYY-MM-DD format
+      const dateParts = dateStr.split('-');
+      if (dateParts.length !== 3) {
+        console.error('Invalid date format, expected YYYY-MM-DD');
+        return dateStr;
+      }
+      
+      // Create a valid ISO timestamp
+      return `${dateStr}T${timeStr}:00`;
+    } catch (error) {
+      console.error('Error combining date and time:', error);
+      return dateStr;
     }
   },
 

@@ -4,32 +4,21 @@ import { Card, CardBody } from '../../../../components/ui';
 import { DollarSign, Tag, Calendar, User, Clock } from 'lucide-react';
 
 interface PricingStepProps {
-  event: Partial<Event> & {
-    discounted_price?: number | string;
-    registration_deadline?: string;
-  };
-  setEvent: React.Dispatch<React.SetStateAction<Partial<Event> & {
-    discounted_price?: number | string;
-    registration_deadline?: string;
-  }>>;
+  formData: Partial<Event>;
   errors: Record<string, string>;
-  isLoading: boolean;
+  handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  setFieldValue: (name: string, value: unknown) => void;
 }
 
-const PricingStep: React.FC<PricingStepProps> = ({ event, setEvent, errors, isLoading }) => {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    
-    if (type === 'number') {
-      setEvent(prev => ({ ...prev, [name]: value === '' ? '' : Number(value) }));
-    } else {
-      setEvent(prev => ({ ...prev, [name]: value }));
-    }
-  };
-
+const PricingStep: React.FC<PricingStepProps> = ({ 
+  formData, 
+  errors, 
+  handleChange, 
+  setFieldValue 
+}) => {
   return (
-    <Card className="p-6">
-      <h3 className="text-xl font-semibold mb-6">Event Pricing</h3>
+    <div className="space-y-6 p-6">
+      <h2 className="text-xl font-semibold text-gray-900 border-b pb-3">Event Pricing</h2>
       
       <div className="space-y-6">
         {/* Standard Pricing */}
@@ -45,10 +34,9 @@ const PricingStep: React.FC<PricingStepProps> = ({ event, setEvent, errors, isLo
                 <input
                   type="number"
                   name="price"
-                  value={event.price || ''}
+                  value={formData.price || ''}
                   onChange={handleChange}
                   placeholder="e.g., 250000"
-                  disabled={isLoading}
                   min="0"
                   step="1"
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-accent-500 focus:border-accent-500"
@@ -67,10 +55,9 @@ const PricingStep: React.FC<PricingStepProps> = ({ event, setEvent, errors, isLo
                 <input
                   type="number"
                   name="discounted_price"
-                  value={event.discounted_price || ''}
+                  value={formData.discounted_price || ''}
                   onChange={handleChange}
                   placeholder="e.g., 200000"
-                  disabled={isLoading}
                   min="0"
                   step="1"
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-accent-500 focus:border-accent-500"
@@ -94,10 +81,9 @@ const PricingStep: React.FC<PricingStepProps> = ({ event, setEvent, errors, isLo
                 <input
                   type="number"
                   name="min_attendees"
-                  value={event.min_attendees || ''}
+                  value={formData.min_attendees || ''}
                   onChange={handleChange}
                   placeholder="Minimum"
-                  disabled={isLoading}
                   min="1"
                   step="1"
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-accent-500 focus:border-accent-500"
@@ -115,10 +101,9 @@ const PricingStep: React.FC<PricingStepProps> = ({ event, setEvent, errors, isLo
                 <input
                   type="number"
                   name="max_attendees"
-                  value={event.max_attendees || ''}
+                  value={formData.max_attendees || ''}
                   onChange={handleChange}
                   placeholder="Maximum"
-                  disabled={isLoading}
                   min="1"
                   step="1"
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-accent-500 focus:border-accent-500"
@@ -136,9 +121,8 @@ const PricingStep: React.FC<PricingStepProps> = ({ event, setEvent, errors, isLo
                 <input
                   type="date"
                   name="registration_deadline"
-                  value={event.registration_deadline || ''}
+                  value={formData.registration_deadline || ''}
                   onChange={handleChange}
-                  disabled={isLoading}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-accent-500 focus:border-accent-500"
                 />
               </div>
@@ -160,30 +144,47 @@ const PricingStep: React.FC<PricingStepProps> = ({ event, setEvent, errors, isLo
                 <input
                   type="text"
                   name="duration"
-                  value={event.duration || ''}
+                  value={formData.duration || ''}
                   onChange={handleChange}
                   placeholder="e.g., 3 days, 2 hours"
-                  disabled={isLoading}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-accent-500 focus:border-accent-500"
                 />
               </div>
               <p className="text-xs text-gray-500 mt-1">How long the event lasts</p>
             </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Featured Event</label>
+              <div className="relative mt-1">
+                <select
+                  name="featured"
+                  value={formData.featured ? 'true' : 'false'}
+                  onChange={(e) => setFieldValue('featured', e.target.value === 'true')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-accent-500 focus:border-accent-500"
+                >
+                  <option value="false">No</option>
+                  <option value="true">Yes</option>
+                </select>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Show on home page and featured sections</p>
+            </div>
           </div>
         </div>
         
         {/* Pricing Notes */}
-        <CardBody className="bg-gray-50 mt-6 rounded-lg">
-          <h4 className="font-medium mb-2">Pricing Tips</h4>
-          <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-            <li>Set competitive prices that reflect the value of your event</li>
-            <li>Consider offering early bird discounts to encourage early registrations</li>
-            <li>Be clear about what's included in the price to set proper expectations</li>
-            <li>If applicable, include information about group discounts in the description</li>
-          </ul>
-        </CardBody>
+        <Card className="mt-6">
+          <CardBody className="bg-gray-50">
+            <h4 className="font-medium mb-2">Pricing Tips</h4>
+            <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+              <li>Set competitive prices that reflect the value of your event</li>
+              <li>Consider offering early bird discounts to encourage early registrations</li>
+              <li>Be clear about what's included in the price to set proper expectations</li>
+              <li>If applicable, include information about group discounts in the description</li>
+            </ul>
+          </CardBody>
+        </Card>
       </div>
-    </Card>
+    </div>
   );
 };
 
