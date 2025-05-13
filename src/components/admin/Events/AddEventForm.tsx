@@ -28,7 +28,6 @@ const AddEventForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState<FormStep>('basic');
   const [eventTypes, setEventTypes] = useState<{id: string; name: string}[]>([]);
-  const [loadingEventTypes, setLoadingEventTypes] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // State for event data
@@ -66,16 +65,48 @@ const AddEventForm: React.FC = () => {
     galleryPreview,
     uploading,
     progress,
-    handleMainImageUpload,
-    handleGalleryImageUpload,
-    removeGalleryImage,
-    resetMainImage
-  } = useMediaUploader({ bucketName: 'events' });
+    handleMainImageUpload: uploadMainImage,
+    handleGalleryImageUpload: uploadGalleryImage,
+    removeGalleryImage: removeGallery,
+    resetMainImage: resetMain,
+    handleAddImageUrl,
+    handleAddGalleryUrl,
+    setImageUrlInput,
+    setGalleryUrlInput,
+    imageUrlInput,
+    galleryUrlInput
+  } = useMediaUploader({ 
+    bucketName: 'events' 
+  });
+
+  // Wrap the media uploader functions to connect with form state
+  const handleMainImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    await uploadMainImage(e, setFieldValue);
+  };
+
+  const handleGalleryImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    await uploadGalleryImage(e, setFieldValue, event.gallery || []);
+  };
+
+  const removeGalleryImage = (index: number) => {
+    removeGallery(index, setFieldValue, event.gallery || []);
+  };
+
+  const resetMainImage = () => {
+    resetMain(setFieldValue);
+  };
+
+  const handleImageUrl = () => {
+    handleAddImageUrl(setFieldValue);
+  };
+
+  const handleGalleryUrl = () => {
+    handleAddGalleryUrl(setFieldValue, event.gallery || []);
+  };
 
   // Fetch event types when component mounts
   React.useEffect(() => {
     const fetchEventTypes = async () => {
-      setLoadingEventTypes(true);
       try {
         const types = await eventsService.getEventTypes();
         setEventTypes(types);
@@ -93,8 +124,6 @@ const AddEventForm: React.FC = () => {
           { id: 'seminar', name: 'Seminar' },
           { id: 'workshop', name: 'Workshop' },
         ]);
-      } finally {
-        setLoadingEventTypes(false);
       }
     };
 
@@ -181,13 +210,13 @@ const AddEventForm: React.FC = () => {
       
       // Ensure numeric fields are properly formatted
       const numericFields = ['price', 'min_attendees', 'max_attendees', 'rating'];
-      const eventData: any = { ...event };
+      const eventData = { ...event } as Record<string, unknown>;
       
       numericFields.forEach(field => {
         if (eventData[field] !== undefined) {
           // Convert to number if it's a string
           if (typeof eventData[field] === 'string') {
-            const parsed = parseFloat(eventData[field]);
+            const parsed = parseFloat(eventData[field] as string);
             eventData[field] = !isNaN(parsed) ? parsed : null;
           }
         }
@@ -204,7 +233,7 @@ const AddEventForm: React.FC = () => {
       eventData.excluded = exclusions.filter(item => item.trim() !== '');
       
       // Create the event
-      const result = await eventsService.createEvent(eventData);
+      const result = await eventsService.createEvent(eventData as Omit<Event, 'id' | 'created_at' | 'updated_at'>);
       
       if (result) {
         toast.success('Event created successfully!');
@@ -212,9 +241,10 @@ const AddEventForm: React.FC = () => {
       } else {
         throw new Error('Failed to create event');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating event:', error);
-      toast.error(error.message || 'Failed to create event. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create event. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -234,7 +264,7 @@ const AddEventForm: React.FC = () => {
     }
   };
 
-  const setFieldValue = (name: string, value: string | number | boolean | string[] | Array<any>) => {
+  const setFieldValue = (name: string, value: string | number | boolean | string[] | any[]) => {
     setEvent(prev => ({
       ...prev,
       [name]: value
@@ -276,6 +306,12 @@ const AddEventForm: React.FC = () => {
             handleGalleryImageUpload={handleGalleryImageUpload}
             removeGalleryImage={removeGalleryImage}
             resetMainImage={resetMainImage}
+            handleAddImageUrl={handleImageUrl}
+            handleAddGalleryUrl={handleGalleryUrl}
+            imageUrlInput={imageUrlInput}
+            galleryUrlInput={galleryUrlInput}
+            setImageUrlInput={setImageUrlInput}
+            setGalleryUrlInput={setGalleryUrlInput}
           />
         );
       case 'details':
