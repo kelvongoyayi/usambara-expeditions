@@ -48,7 +48,7 @@ const InputField: React.FC<InputFieldProps> = ({
       {label && (
         <label 
           htmlFor={props.id || props.name} 
-          className={`block text-sm font-medium mb-1.5 ${error ? 'text-red-600' : 'text-dark-700'}`}
+          className={`block text-xs sm:text-sm font-medium mb-1 sm:mb-1.5 ${error ? 'text-red-600' : 'text-dark-700'}`}
         >
           {label}
           {props.required && <span className="text-red-500 ml-1">*</span>}
@@ -57,18 +57,18 @@ const InputField: React.FC<InputFieldProps> = ({
       
       <div className={`relative ${widthClass}`}>
         {icon && (
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            {icon}
+          <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
+            <span className="text-gray-500">{icon}</span>
           </div>
         )}
         
         <input
           type={inputType}
           className={`
-            rounded-lg shadow-sm border transition-all duration-200
-            ${icon ? 'pl-10' : 'pl-4'} 
-            ${type === 'password' ? 'pr-10' : 'pr-4'} 
-            py-2.5 
+            rounded-lg shadow-sm border transition-all duration-200 text-sm
+            ${icon ? 'pl-8 sm:pl-10' : 'pl-3 sm:pl-4'} 
+            ${type === 'password' ? 'pr-8 sm:pr-10' : 'pr-3 sm:pr-4'} 
+            py-2 sm:py-2.5 
             ${error 
               ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
               : 'border-gray-300 focus:ring-brand-500 focus:border-brand-500'
@@ -85,17 +85,17 @@ const InputField: React.FC<InputFieldProps> = ({
         {type === 'password' && (
           <button
             type="button"
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
+            className="absolute inset-y-0 right-0 pr-2 sm:pr-3 flex items-center text-gray-500 hover:text-gray-700"
             onClick={togglePasswordVisibility}
             tabIndex={-1}
           >
-            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            {showPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
         )}
       </div>
       
       {(error || helperText) && (
-        <p className={`mt-1.5 text-sm ${error ? 'text-red-600' : 'text-gray-500'}`}>
+        <p className={`mt-1 sm:mt-1.5 text-xs sm:text-sm ${error ? 'text-red-600' : 'text-gray-500'}`}>
           {error || helperText}
         </p>
       )}

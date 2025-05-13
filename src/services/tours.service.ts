@@ -32,6 +32,9 @@ export interface Tour {
   gallery?: string[];
   itinerary?: DayItinerary[];
   faqs?: FAQ[];
+  best_season?: string;
+  season?: string;
+  accommodation_type?: string;
 }
 
 // Define itinerary day interface
@@ -54,6 +57,7 @@ export const toursService = {
       const { data, error } = await supabase
         .from('tours')
         .select('*')
+        .eq('status', 'published')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -75,20 +79,14 @@ export const toursService = {
       }
       
       // Get tour data
-      console.log('Querying tours table...');
-      console.log('Using ID to query:', id, 'Type:', typeof id);
-      
       const { data: tourData, error: tourError } = await supabase
         .from('tours')
         .select('*')
-        .eq('id', id as any)
+        .eq('id', id)
         .single();
       
       if (tourError) {
         console.error('Error fetching tour data:', tourError);
-        console.error('Status code:', tourError.code);
-        console.error('Error message:', tourError.message);
-        console.error('Error details:', tourError.details);
         throw tourError;
       }
       
@@ -97,39 +95,67 @@ export const toursService = {
         return null;
       }
       
-      console.log('Tour data retrieved:', tourData);
-      
-      // Get itinerary data
-      console.log('Querying tour_itinerary table...');
-      try {
-        const { data: itineraryData, error: itineraryError } = await supabase
-          .from('tour_itinerary')
-          .select('*')
-          .eq('tour_id', id as any)
-          .order('day_number', { ascending: true });
+      // Process and normalize itinerary data if it exists in the tour object
+      let normalizedItinerary = [];
+      if (tourData.itinerary && Array.isArray(tourData.itinerary)) {
+        normalizedItinerary = tourData.itinerary.map((day, index) => {
+          // Create a unique ID if not present
+          const dayId = `day_${Date.now()}_${index}`;
+          
+          // Normalize the structure - handle both "day" and "day_number" fields
+          return {
+            id: dayId,
+            day_number: day.day_number || day.day || index + 1,
+            title: day.title || `Day ${day.day_number || day.day || index + 1}`,
+            description: day.description || '',
+            location: day.location || '',
+            distance: day.distance || '',
+            difficulty: day.difficulty || '',
+            accommodation: day.accommodation || '',
+            meals: Array.isArray(day.meals) ? day.meals : [],
+            activities: Array.isArray(day.activities) ? day.activities : [],
+            elevation: day.elevation || '',
+            // Preserve original day field for backward compatibility
+            day: day.day_number || day.day || index + 1
+          };
+        });
         
-        if (itineraryError) {
-          console.error('Error fetching itinerary:', itineraryError);
-          console.error('Status code:', itineraryError.code);
-          console.error('Error message:', itineraryError.message);
-          // Continue with the tour data even if itinerary fetch fails
-        } else {
-          console.log('Itinerary data retrieved:', itineraryData);
-        }
-        
-        // Combine tour and itinerary data
-        const result = {
-          ...(tourData as any),
-          itinerary: itineraryData || []
-        } as Tour;
-        
-        console.log('Returning combined tour data:', result);
-        return result;
-      } catch (innerError) {
-        console.error('Inner error fetching itinerary:', innerError);
-        // Return tour data without itinerary if there was an error
-        return tourData as Tour;
+        console.log('Normalized itinerary data:', normalizedItinerary);
       }
+      
+      // Get itinerary data from dedicated table (as a fallback)
+      const { data: itineraryData, error: itineraryError } = await supabase
+        .from('tour_itinerary')
+        .select('*')
+        .eq('tour_id', id)
+        .order('day_number', { ascending: true });
+      
+      if (itineraryError) {
+        console.error('Error fetching itinerary:', itineraryError);
+      }
+      
+      // Use the normalized itinerary from tourData.itinerary if it exists, otherwise use itineraryData
+      const finalItinerary = normalizedItinerary.length > 0 ? normalizedItinerary : (itineraryData || []);
+      
+      // Get FAQs related to this tour
+      const { data: faqsData, error: faqsError } = await supabase
+        .from('faqs')
+        .select('*')
+        .eq('tour_id', id)
+        .order('created_at', { ascending: true });
+      
+      if (faqsError) {
+        console.error('Error fetching FAQs:', faqsError);
+      }
+      
+      // Combine tour, itinerary, and FAQs data
+      const result = {
+        ...tourData,
+        itinerary: finalItinerary,
+        faqs: faqsData || []
+      } as Tour;
+      
+      return result;
     } catch (error) {
       console.error(`Error fetching tour with id ${id}:`, error);
       return null;
@@ -140,7 +166,8 @@ export const toursService = {
     try {
       let query = supabase
         .from('tours')
-        .select('*');
+        .select('*')
+        .eq('status', 'published');
       
       if (category && category !== 'all') {
         query = query.eq('category', category);
@@ -162,6 +189,7 @@ export const toursService = {
       const { data, error } = await supabase
         .from('tours')
         .select('*')
+        .eq('status', 'published')
         .eq('featured', true)
         .order('created_at', { ascending: false });
       
@@ -174,12 +202,59 @@ export const toursService = {
     }
   },
 
+  async createOrUpdateFAQs(tourId: string, faqs: any[]): Promise<boolean> {
+    if (!Array.isArray(faqs) || faqs.length === 0) {
+      console.log('No FAQs to insert');
+      return true; // Consider this a success as there's nothing to insert
+    }
+    
+    try {
+      // First, delete any existing FAQs for this tour to avoid duplicates
+      const { error: deleteError } = await supabase
+        .from('faqs')
+        .delete()
+        .eq('tour_id', tourId);
+      
+      if (deleteError) {
+        console.error('Error deleting existing FAQs:', deleteError);
+        // Continue with insertion even if deletion fails
+      }
+      
+      // Prepare the FAQs for insertion
+      const faqsToInsert = faqs.map(faq => ({
+        tour_id: tourId,
+        question: faq.question || '',
+        answer: faq.answer || '',
+        created_at: new Date().toISOString()
+      }));
+      
+      console.log('Inserting FAQ data:', JSON.stringify(faqsToInsert, null, 2));
+      
+      // Insert the FAQs
+      const { error: insertError } = await supabase
+        .from('faqs')
+        .insert(faqsToInsert);
+      
+      if (insertError) {
+        console.error('Error inserting FAQs:', insertError);
+        console.error('Error details:', JSON.stringify(insertError, null, 2));
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error creating/updating FAQs:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      return false;
+    }
+  },
+
   async createTour(tour: Omit<Tour, 'id' | 'created_at' | 'updated_at'>): Promise<Tour | null> {
     try {
       const now = new Date().toISOString();
       
-      // Extract itinerary from tour data to handle separately
-      const { itinerary, ...tourData } = tour;
+      // Extract arrays from tour data to handle separately
+      const { itinerary, faqs, ...tourData } = tour;
       
       // Convert numeric fields
       const processedTourData = {
@@ -226,10 +301,26 @@ export const toursService = {
         console.log('No itinerary data to save or itinerary was empty');
       }
       
-      // Return the created tour with the itinerary data
+      // If there's FAQs data, add it to the FAQs table
+      if (faqs && Array.isArray(faqs) && faqs.length > 0 && createdTour.id) {
+        try {
+          const faqsSuccess = await this.createOrUpdateFAQs(createdTour.id, faqs);
+          if (!faqsSuccess) {
+            console.warn('Warning: Created tour but failed to save FAQs data');
+          }
+        } catch (faqsError) {
+          console.error('Error saving FAQs:', faqsError);
+          // Continue even if FAQs save fails - the tour was created successfully
+        }
+      } else {
+        console.log('No FAQs data to save or FAQs were empty');
+      }
+      
+      // Return the created tour with the additional data
       return {
         ...createdTour,
-        itinerary: itinerary || []
+        itinerary: itinerary || [],
+        faqs: faqs || []
       };
     } catch (error) {
       console.error('Error creating tour:', error);
@@ -256,22 +347,42 @@ export const toursService = {
         // Continue with insertion even if deletion fails
       }
       
-      // Prepare the itinerary days for insertion
+      // Prepare the itinerary days for insertion - standardize field names
       const itineraryToInsert = itineraryDays.map((day, index) => {
+        // Handle both frontend and admin form field naming conventions
+        const dayNumber = day.day_number || day.day || index + 1;
+        
+        // Process meals to ensure it's always an array of strings
+        let meals = [];
+        if (Array.isArray(day.meals)) {
+          meals = day.meals.filter(Boolean);
+        } else if (typeof day.meals === 'string' && day.meals.trim()) {
+          meals = day.meals.split(',').map(m => m.trim()).filter(Boolean);
+        }
+        
+        // Process activities to ensure it's always an array of strings
+        let activities = [];
+        if (Array.isArray(day.activities)) {
+          activities = day.activities.filter(Boolean);
+        } else if (typeof day.activities === 'string' && day.activities.trim()) {
+          activities = day.activities.split(',').map(a => a.trim()).filter(Boolean);
+        }
+        
         // Ensure all required fields are present
         const preparedDay = {
           tour_id: tourId,
-          day_number: day.day_number || index + 1,
-          title: day.title || `Day ${index + 1}`,
+          day_number: dayNumber,
+          title: day.title || `Day ${dayNumber}`,
           description: day.description || '',
           location: day.location || '',
           distance: day.distance || '',
+          elevation: day.elevation || '',
           accommodation: day.accommodation || '',
-          meals: Array.isArray(day.meals) ? day.meals : [],
-          activities: Array.isArray(day.activities) ? day.activities : []
+          meals: meals,
+          activities: activities
         };
         
-        console.log(`Prepared itinerary day ${index + 1}:`, preparedDay);
+        console.log(`Prepared itinerary day ${dayNumber}:`, preparedDay);
         return preparedDay;
       });
       
@@ -298,8 +409,8 @@ export const toursService = {
 
   async updateTour(id: string, tour: Partial<Omit<Tour, 'id' | 'created_at' | 'updated_at'>>): Promise<Tour | null> {
     try {
-      // Extract itinerary from tour data to handle separately
-      const { itinerary, ...tourData } = tour;
+      // Extract arrays from tour data to handle separately
+      const { itinerary, faqs, ...tourData } = tour;
       
       // Convert numeric fields
       const processedTourData = {
@@ -310,11 +421,33 @@ export const toursService = {
         max_group_size: tourData.max_group_size ? Number(tourData.max_group_size) : undefined
       };
       
+      console.log('Updating tour with processed data:', JSON.stringify(processedTourData, null, 2));
+      
+      // If there's itinerary data, normalize it for storage in the database
+      let processedItinerary = null;
+      if (itinerary && Array.isArray(itinerary) && itinerary.length > 0) {
+        // Convert from form format (day_number) to database format (day)
+        processedItinerary = itinerary.map((day, index) => ({
+          day: day.day_number || day.day || index + 1,
+          title: day.title || `Day ${day.day_number || day.day || index + 1}`,
+          description: day.description || '',
+          location: day.location || '',
+          distance: day.distance || '',
+          accommodation: day.accommodation || '',
+          meals: Array.isArray(day.meals) ? day.meals : [],
+          activities: Array.isArray(day.activities) ? day.activities : [],
+          elevation: day.elevation || ''
+        }));
+        
+        console.log('Processed itinerary for database storage:', processedItinerary);
+      }
+      
       // Update the tour in the tours table
       const { data: updatedTour, error } = await supabase
         .from('tours')
         .update({
           ...processedTourData,
+          itinerary: processedItinerary, // Store normalized itinerary data directly in the tours table
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
@@ -323,16 +456,29 @@ export const toursService = {
       
       if (error) throw error;
       
-      // If there's itinerary data, update it
-      if (itinerary && itinerary.length > 0) {
-        await this.createOrUpdateItinerary(id, itinerary);
+      // If there's itinerary data, always update it in the separate table too (for backwards compatibility)
+      if (itinerary && Array.isArray(itinerary) && itinerary.length > 0) {
+        try {
+          const itineraryResult = await this.createOrUpdateItinerary(id, itinerary);
+          if (!itineraryResult) {
+            console.error('Failed to update itinerary data in separate table');
+          }
+        } catch (itineraryError) {
+          console.error('Error updating itinerary in separate table:', itineraryError);
+          // Continue even if separate table update fails - the tour was updated successfully
+        }
       }
       
-      // Return the updated tour with the itinerary data
-      return {
-        ...updatedTour,
-        itinerary: itinerary || []
-      };
+      // If there's FAQs data, update it
+      if (faqs && faqs.length > 0) {
+        await this.createOrUpdateFAQs(id, faqs);
+      }
+      
+      // Get the updated tour with fresh itinerary and FAQs data
+      const refreshedTour = await this.getTourById(id);
+      
+      // Return the updated tour with all the data
+      return refreshedTour;
     } catch (error) {
       console.error(`Error updating tour with id ${id}:`, error);
       return null;
@@ -390,14 +536,52 @@ export const toursService = {
 
   // Convert database Tour to FeaturedItem format
   toFeaturedItem(tour: Tour): FeaturedItem {
+    // Map itinerary data from database format to frontend format
+    const mappedItinerary = tour.itinerary?.map(day => ({
+      day: day.day_number || day.day || 0,
+      title: day.title || '',
+      description: day.description || '',
+      activities: Array.isArray(day.activities) ? day.activities : [],
+      meals: Array.isArray(day.meals) ? day.meals : [],
+      accommodation: day.accommodation || '',
+      distance: day.distance || '',
+      elevation: day.elevation || '',
+      location: day.location || ''
+    })) || [];
+
+    console.log('Mapped itinerary for frontend:', mappedItinerary);
+
+    // Map FAQs from database format
+    const mappedFaqs = tour.faqs?.map(faq => ({
+      question: faq.question,
+      answer: faq.answer
+    })) || [];
+
+    // Generate special ID with prefix based on category
+    // Create prefix that matches the URL route for proper filtering
+    let specialId = tour.id;
+    if (tour.category === 'cycling') {
+      specialId = `mtb-${tour.id.substring(0, 6)}`;
+    } else if (tour.category === 'hiking') {
+      specialId = `hiking-${tour.id.substring(0, 6)}`;
+    } else if (tour.category === '4x4') {
+      specialId = `4x4-${tour.id.substring(0, 6)}`;
+    } else if (tour.category === 'motocamping') {
+      specialId = `moto-${tour.id.substring(0, 6)}`;
+    } else if (tour.category === 'school') {
+      specialId = `school-${tour.id.substring(0, 6)}`;
+    }
+
     return {
-      id: tour.id,
+      id: specialId,
+      originalId: tour.id, // Preserve the original UUID
       title: tour.title,
+      slug: tour.slug,
       duration: tour.duration,
-      price: tour.price,
+      price: typeof tour.price === 'string' ? parseFloat(tour.price as string) : tour.price,
       location: tour.location,
       image: tour.image_url,
-      rating: tour.rating,
+      rating: tour.rating || 0,
       description: tour.description,
       category: tour.category as any,
       featured: tour.featured,
@@ -407,13 +591,19 @@ export const toursService = {
         { min: tour.min_group_size, max: tour.max_group_size } : undefined,
       startLocation: tour.start_location,
       endLocation: tour.end_location,
-      highlights: tour.highlights,
-      requirements: tour.requirements,
-      gallery: tour.gallery,
-      included: tour.included,
-      excluded: tour.excluded,
-      itinerary: tour.itinerary,
-      faqs: tour.faqs
+      highlights: tour.highlights || [],
+      requirements: tour.requirements || [],
+      gallery: tour.gallery || [],
+      included: tour.included || [],
+      excluded: tour.excluded || [],
+      itinerary: mappedItinerary,
+      faqs: mappedFaqs,
+      bestSeason: tour.best_season,
+      season: tour.season,
+      accommodationType: tour.accommodation_type,
+      createdAt: tour.created_at,
+      updatedAt: tour.updated_at,
+      status: tour.status || 'published'
     };
   }
 };

@@ -145,9 +145,9 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <DetailsPanelLayout title="General Information">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           <div className="col-span-1 md:col-span-2">
             <InputField
               label="Tour Title"
@@ -169,7 +169,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
               value={formValues.description || ""}
               onChange={(e) => handleChange("description", e.target.value)}
               placeholder="Enter tour description"
-              className="min-h-32"
+              className="min-h-24 sm:min-h-32"
               error={errors.description}
               required
             />
@@ -281,7 +281,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
             />
           </div>
 
-          <div className="col-span-1 md:col-span-2 flex items-center space-x-2 pt-4">
+          <div className="col-span-1 md:col-span-2 flex items-center space-x-2 pt-2 sm:pt-4">
             <CheckboxField
               label="Feature on homepage"
               name="featured"
@@ -293,7 +293,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
       </DetailsPanelLayout>
 
       <DetailsPanelLayout title="Location">
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:gap-4">
           <div>
             <SelectField
               label="Primary Location"
@@ -336,7 +336,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
 
       {/* Validation Alert */}
       {Object.keys(errors).length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded flex items-center">
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-3 sm:px-4 py-2 sm:py-3 rounded flex items-center">
           <AlertTriangle className="w-5 h-5 mr-2 flex-shrink-0 text-amber-500" />
           <span className="text-sm">
             Please fill in all required fields marked with an asterisk (*).
@@ -346,7 +346,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
       
       {/* Success Message */}
       {formValues.title && formValues.description && formValues.price && formValues.duration && formValues.location && formValues.category && (
-        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded flex items-center">
+        <div className="bg-green-50 border border-green-200 text-green-800 px-3 sm:px-4 py-2 sm:py-3 rounded flex items-center">
           <Check className="w-5 h-5 mr-2 flex-shrink-0 text-green-500" />
           <span className="text-sm">
             Basic information looks good! You can now move to the next step.

@@ -26,12 +26,12 @@
   ],
   "rules": {
     "classMembers": "warn",
-    "duplicateExports": "error",
-    "enumMembers": "warn",
     "exports": "error",
     "files": "error",
-    "nsExports": "error",
     "types": "error",
-    "unused": "error"
+    "enumMembers": "warn",
+    "nsExports": "error",
+    "dependencies": "error", 
+    "devDependencies": "error"
   }
 }

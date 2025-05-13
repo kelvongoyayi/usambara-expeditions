@@ -178,14 +178,14 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
   return (
     <div className={`w-full ${containerClassName}`}>
       {label && (
-        <label className={`block text-sm font-medium mb-1.5 ${error ? 'text-red-600' : 'text-dark-700'}`}>
+        <label className={`block text-xs sm:text-sm font-medium mb-1 sm:mb-1.5 ${error ? 'text-red-600' : 'text-dark-700'}`}>
           {label}
         </label>
       )}
       
       <div
         className={`
-          border-2 border-dashed rounded-lg p-4 transition-colors
+          border-2 border-dashed rounded-lg p-2 sm:p-4 transition-colors
           ${dragActive ? 'border-brand-500 bg-brand-50/50' : 'border-gray-300 hover:border-gray-400'}
           ${error ? 'border-red-300 bg-red-50/50' : ''}
           ${disabled ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'cursor-pointer'}
@@ -207,22 +207,22 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
           disabled={disabled}
         />
         
-        <div className="flex flex-col items-center justify-center py-4">
-          <div className="mb-3 p-2 bg-brand-100 rounded-full">
-            <Upload className="w-6 h-6 text-brand-600" />
+        <div className="flex flex-col items-center justify-center py-2 sm:py-4">
+          <div className="mb-2 sm:mb-3 p-1.5 sm:p-2 bg-brand-100 rounded-full">
+            <Upload className="w-4 h-4 sm:w-6 sm:h-6 text-brand-600" />
           </div>
-          <p className="text-sm font-medium text-dark-700 mb-1">
+          <p className="text-xs sm:text-sm font-medium text-dark-700 mb-0.5 sm:mb-1">
             {multiple ? 'Upload files' : 'Upload a file'}
           </p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 text-center">
             {multiple ? 'Drag & drop files or click to browse' : 'Drag & drop a file or click to browse'}
           </p>
           {accept && (
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 mt-0.5 sm:mt-1 text-center">
               Accepted formats: {accept.split(',').join(', ')}
             </p>
           )}
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-gray-500 mt-0.5 sm:mt-1">
             Max size: {maxSize}MB
           </p>
         </div>
@@ -230,12 +230,12 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
       
       {/* File List */}
       {value.length > 0 && (
-        <div className="mt-3 space-y-2">
+        <div className="mt-2 sm:mt-3 space-y-1.5 sm:space-y-2">
           {value.map((file, index) => (
-            <div key={index} className="flex items-center bg-gray-50 p-2 rounded-md">
+            <div key={index} className="flex items-center bg-gray-50 p-1.5 sm:p-2 rounded-md">
               {getFilePreview(file)}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-dark-700 truncate">{file.name}</p>
+                <p className="text-xs sm:text-sm font-medium text-dark-700 truncate">{file.name}</p>
                 <p className="text-xs text-gray-500">
                   {(file.size / 1024 / 1024).toFixed(2)} MB
                 </p>
@@ -249,7 +249,7 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
                 className="p-1 text-gray-500 hover:text-red-500 transition-colors"
                 disabled={disabled}
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
           ))}
@@ -257,7 +257,7 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
       )}
       
       {(error || helperText) && (
-        <p className={`mt-1.5 text-sm ${error ? 'text-red-600' : 'text-gray-500'}`}>
+        <p className={`mt-1 sm:mt-1.5 text-xs sm:text-sm ${error ? 'text-red-600' : 'text-gray-500'}`}>
           {error || helperText}
         </p>
       )}

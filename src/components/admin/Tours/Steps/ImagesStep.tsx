@@ -91,13 +91,13 @@ const ImagesStep: React.FC<ImagesStepProps> = ({ formValues, onChange, errors, o
   };
   
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-6">
       {/* Main Image Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <Image className="w-5 h-5 text-brand-600" />
-            <h3 className="text-lg font-semibold text-gray-800">Main Tour Image</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
+        <div className="bg-white p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl border border-gray-100">
+          <div className="flex items-center gap-2 mb-3 sm:mb-4">
+            <Image className="w-4 h-4 sm:w-5 sm:h-5 text-brand-600" />
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800">Main Tour Image</h3>
           </div>
           
           {!imagePreview ? (
@@ -115,7 +115,7 @@ const ImagesStep: React.FC<ImagesStepProps> = ({ formValues, onChange, errors, o
               <img 
                 src={imagePreview} 
                 alt="Main tour image" 
-                className="w-full h-48 object-cover rounded-lg"
+                className="w-full h-36 sm:h-48 object-cover rounded-lg"
               />
               <button 
                 onClick={() => resetMainImage(handleChange)} 
@@ -127,24 +127,24 @@ const ImagesStep: React.FC<ImagesStepProps> = ({ formValues, onChange, errors, o
           )}
           
           {/* Image URL Input Option */}
-          <div className="mt-4 border-t pt-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Or add image by URL</h4>
+          <div className="mt-3 sm:mt-4 border-t pt-3 sm:pt-4">
+            <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-2">Or add image by URL</h4>
             <div className="flex space-x-2">
               <input
                 type="text"
                 value={imageUrlInput}
                 onChange={(e) => setImageUrlInput(e.target.value)}
                 placeholder="Paste image URL here"
-                className="flex-1 min-w-0 p-2 border rounded-md text-sm"
+                className="flex-1 min-w-0 p-2 border rounded-md text-xs sm:text-sm"
                 disabled={uploading}
               />
               <button
                 type="button"
                 onClick={() => handleAddImageUrl(handleChange)}
-                className="px-3 py-2 bg-brand-600 text-white rounded-md text-sm flex items-center"
+                className="px-2 sm:px-3 py-2 bg-brand-600 text-white rounded-md text-xs sm:text-sm flex items-center whitespace-nowrap"
                 disabled={!imageUrlInput || uploading}
               >
-                <Link className="w-4 h-4 mr-1" />
+                <Link className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                 Add
               </button>
             </div>
@@ -152,10 +152,10 @@ const ImagesStep: React.FC<ImagesStepProps> = ({ formValues, onChange, errors, o
           </div>
         </div>
         
-        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <Camera className="w-5 h-5 text-accent-500" />
-            <h3 className="text-lg font-semibold text-gray-800">Image Gallery</h3>
+        <div className="bg-white p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl border border-gray-100">
+          <div className="flex items-center gap-2 mb-3 sm:mb-4">
+            <Camera className="w-4 h-4 sm:w-5 sm:h-5 text-accent-500" />
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800">Image Gallery</h3>
           </div>
           
           <FileUploadField
@@ -175,24 +175,24 @@ const ImagesStep: React.FC<ImagesStepProps> = ({ formValues, onChange, errors, o
           )}
           
           {/* Gallery URL Input Option */}
-          <div className="mt-4 border-t pt-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Or add gallery image by URL</h4>
+          <div className="mt-3 sm:mt-4 border-t pt-3 sm:pt-4">
+            <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-2">Or add gallery image by URL</h4>
             <div className="flex space-x-2">
               <input
                 type="text"
                 value={galleryUrlInput}
                 onChange={(e) => setGalleryUrlInput(e.target.value)}
                 placeholder="Paste image URL here"
-                className="flex-1 min-w-0 p-2 border rounded-md text-sm"
+                className="flex-1 min-w-0 p-2 border rounded-md text-xs sm:text-sm"
                 disabled={uploading || (galleryPreview.length >= 10)}
               />
               <button
                 type="button"
                 onClick={() => handleAddGalleryUrl(handleChange, formValues.gallery || [])}
-                className="px-3 py-2 bg-accent-500 text-white rounded-md text-sm flex items-center"
+                className="px-2 sm:px-3 py-2 bg-accent-500 text-white rounded-md text-xs sm:text-sm flex items-center whitespace-nowrap"
                 disabled={!galleryUrlInput || uploading || (galleryPreview.length >= 10)}
               >
-                <Link className="w-4 h-4 mr-1" />
+                <Link className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                 Add
               </button>
             </div>
@@ -203,22 +203,22 @@ const ImagesStep: React.FC<ImagesStepProps> = ({ formValues, onChange, errors, o
       
       {/* Gallery Preview Section */}
       {galleryPreview.length > 0 && (
-        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Gallery Preview</h3>
+        <div className="bg-white p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl border border-gray-100">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">Gallery Preview</h3>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4">
             {galleryPreview.map((img, index) => (
               <div key={index} className="relative group">
                 <img 
                   src={img} 
                   alt={`Gallery image ${index + 1}`} 
-                  className="w-full h-32 object-cover rounded-lg"
+                  className="w-full h-24 sm:h-32 object-cover rounded-lg"
                 />
                 <button 
                   onClick={() => removeGalleryImage(index, handleChange, formValues.gallery || [])} 
-                  className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-1 sm:top-2 right-1 sm:right-2 p-1 bg-red-500 text-white rounded-full opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
               </div>
             ))}
@@ -228,14 +228,14 @@ const ImagesStep: React.FC<ImagesStepProps> = ({ formValues, onChange, errors, o
       
       {/* Upload Progress */}
       {uploading && (
-        <div className="bg-brand-50 border border-brand-200 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-brand-700">Uploading...</span>
-            <span className="text-sm text-brand-700">{Math.round(progress)}%</span>
+        <div className="bg-brand-50 border border-brand-200 rounded-lg p-3 sm:p-4">
+          <div className="flex items-center justify-between mb-1 sm:mb-2">
+            <span className="text-xs sm:text-sm font-medium text-brand-700">Uploading...</span>
+            <span className="text-xs sm:text-sm text-brand-700">{Math.round(progress)}%</span>
           </div>
-          <div className="w-full bg-brand-100 rounded-full h-2">
+          <div className="w-full bg-brand-100 rounded-full h-1.5 sm:h-2">
             <div 
-              className="bg-brand-600 h-2 rounded-full transition-all duration-300" 
+              className="bg-brand-600 h-1.5 sm:h-2 rounded-full transition-all duration-300" 
               style={{ width: `${progress}%` }}
             ></div>
           </div>
@@ -244,21 +244,21 @@ const ImagesStep: React.FC<ImagesStepProps> = ({ formValues, onChange, errors, o
       
       {/* Information Messages */}
       {!formValues.image_url && !uploading && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded flex items-center">
-          <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0 text-amber-500" />
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-3 sm:px-4 py-2 sm:py-3 rounded-lg flex items-center">
+          <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0 text-amber-500" />
           <div>
-            <p className="text-sm font-medium">A main tour image is highly recommended</p>
-            <p className="text-xs mt-1">Tours with appealing images receive more bookings.</p>
+            <p className="text-xs sm:text-sm font-medium">A main tour image is highly recommended</p>
+            <p className="text-xs mt-1 text-amber-700">Tours with appealing images receive more bookings.</p>
           </div>
         </div>
       )}
       
       {formValues.image_url && (
-        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded flex items-center">
-          <Image className="w-5 h-5 mr-2 flex-shrink-0 text-green-500" />
+        <div className="bg-green-50 border border-green-200 text-green-800 px-3 sm:px-4 py-2 sm:py-3 rounded-lg flex items-center">
+          <Image className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0 text-green-500" />
           <div>
-            <p className="text-sm font-medium">Main image added successfully!</p>
-            <p className="text-xs mt-1">You can add more images to the gallery or proceed to the next step.</p>
+            <p className="text-xs sm:text-sm font-medium">Main image added successfully!</p>
+            <p className="text-xs mt-1 text-green-700">You can add more images to the gallery or proceed to the next step.</p>
           </div>
         </div>
       )}

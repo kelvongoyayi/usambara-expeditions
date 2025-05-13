@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
-  MapPin, Clock, Calendar, Users, ChevronRight, Heart, 
-  Share2, Star, Coffee, Utensils, Home, Mountain, ArrowLeft
+  MapPin, Clock, ChevronRight, Heart, 
+  Share2, Star, Utensils, Home, Mountain, ArrowLeft, Users
 } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import Section from '../../components/ui/Section';
@@ -30,7 +30,19 @@ const TourDetail: React.FC = () => {
         
         if (tourData) {
           // Convert to FeaturedItem format
-          setTour(toursService.toFeaturedItem(tourData));
+          const formattedTour = toursService.toFeaturedItem(tourData);
+          console.log('Tour data loaded:', { 
+            hasItinerary: !!tourData.itinerary, 
+            itineraryLength: tourData.itinerary?.length || 0,
+            rawItinerary: tourData.itinerary,
+            formattedItinerary: formattedTour.itinerary 
+          });
+          setTour(formattedTour);
+          
+          // If there is at least one day in the itinerary, set it as selected
+          if (formattedTour.itinerary && formattedTour.itinerary.length > 0) {
+            setSelectedDay(formattedTour.itinerary[0].day);
+          }
         } else {
           console.error(`Tour with ID ${tourId} not found`);
         }
@@ -107,6 +119,11 @@ const TourDetail: React.FC = () => {
     );
   }
 
+  // Format price - handling both string and number possibilities
+  const displayPrice = typeof tour.price === 'number' 
+    ? tour.price.toLocaleString() 
+    : parseFloat(String(tour.price)).toLocaleString();
+
   return (
     <Layout>
       {/* Hero Section */}
@@ -176,24 +193,83 @@ const TourDetail: React.FC = () => {
                 {tour.description}
               </p>
               
-              {tour.highlights && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {tour.highlights && tour.highlights.length > 0 && (
                   <div>
                     <h3 className="font-bold text-lg mb-3">Tour Highlights</h3>
                     <FeatureList features={tour.highlights.map(h => ({ text: h }))} />
                   </div>
-                  {tour.requirements && (
+                )}
+                {tour.requirements && tour.requirements.length > 0 && (
+                  <div>
+                    <h3 className="font-bold text-lg mb-3">Requirements</h3>
+                    <FeatureList features={tour.requirements.map(r => ({ text: r }))} />
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Additional Tour Information */}
+            <div className="bg-slate-50 rounded-xl p-6 border border-slate-100">
+              <h2 className="text-xl font-bold mb-4">Tour Details</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Left Column */}
+                <div className="space-y-4">
+                  {tour.startLocation && (
                     <div>
-                      <h3 className="font-bold text-lg mb-3">Requirements</h3>
-                      <FeatureList features={tour.requirements.map(r => ({ text: r }))} />
+                      <h3 className="font-medium text-dark-500">Start Location</h3>
+                      <p className="text-dark-800 flex items-center">
+                        <MapPin className="w-4 h-4 mr-2 text-accent-500" />
+                        {tour.startLocation}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {tour.endLocation && (
+                    <div>
+                      <h3 className="font-medium text-dark-500">End Location</h3>
+                      <p className="text-dark-800 flex items-center">
+                        <MapPin className="w-4 h-4 mr-2 text-accent-500" />
+                        {tour.endLocation}
+                      </p>
                     </div>
                   )}
                 </div>
-              )}
+                
+                {/* Right Column */}
+                <div className="space-y-4">
+                  {/* Check for season or bestSeason property */}
+                  {tour.season && (
+                    <div>
+                      <h3 className="font-medium text-dark-500">Best Season</h3>
+                      <p className="text-dark-800 capitalize">
+                        {tour.season.replace('_', ' ')}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {tour.bestSeason && (
+                    <div>
+                      <h3 className="font-medium text-dark-500">Best Season</h3>
+                      <p className="text-dark-800">{tour.bestSeason}</p>
+                    </div>
+                  )}
+                  
+                  {tour.accommodationType && (
+                    <div>
+                      <h3 className="font-medium text-dark-500">Accommodation Type</h3>
+                      <p className="text-dark-800 capitalize flex items-center">
+                        <Home className="w-4 h-4 mr-2 text-accent-500" />
+                        {tour.accommodationType.replace('_', ' ')}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
             
             {/* Itinerary */}
-            {tour.itinerary && (
+            {tour.itinerary && tour.itinerary.length > 0 ? (
               <div>
                 <h2 className="text-2xl font-bold mb-4">Tour Itinerary</h2>
                 <div className="space-y-6">
@@ -227,7 +303,7 @@ const TourDetail: React.FC = () => {
                             <div>
                               <h4 className="font-medium mb-2">Activities</h4>
                               <ul className="space-y-2">
-                                {day.activities.map((activity, index) => (
+                                {day.activities && day.activities.map((activity, index) => (
                                   <li key={index} className="flex items-center text-dark-600">
                                     <span className="w-1.5 h-1.5 bg-accent-500 rounded-full mr-2"></span>
                                     {activity}
@@ -237,20 +313,22 @@ const TourDetail: React.FC = () => {
                             </div>
                             
                             <div className="space-y-4">
-                              <div>
-                                <h4 className="font-medium mb-2">Meals Included</h4>
-                                <div className="flex gap-2">
-                                  {day.meals.map((meal) => (
-                                    <span 
-                                      key={meal}
-                                      className="bg-brand-50 text-brand-700 px-3 py-1 rounded-full text-sm capitalize flex items-center"
-                                    >
-                                      <Utensils className="w-4 h-4 mr-1" />
-                                      {meal}
-                                    </span>
-                                  ))}
+                              {day.meals && day.meals.length > 0 && (
+                                <div>
+                                  <h4 className="font-medium mb-2">Meals Included</h4>
+                                  <div className="flex flex-wrap gap-2">
+                                    {day.meals.map((meal, idx) => (
+                                      <span 
+                                        key={idx}
+                                        className="bg-brand-50 text-brand-700 px-3 py-1 rounded-full text-sm capitalize flex items-center"
+                                      >
+                                        <Utensils className="w-4 h-4 mr-1" />
+                                        {meal}
+                                      </span>
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
+                              )}
                               
                               {day.accommodation && (
                                 <div>
@@ -276,10 +354,18 @@ const TourDetail: React.FC = () => {
                   ))}
                 </div>
               </div>
+            ) : (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                <h3 className="font-medium text-yellow-800">No Itinerary Available</h3>
+                <p className="text-yellow-700 text-sm mt-1">
+                  Detailed day-by-day itinerary information is not available for this tour.
+                  Please contact us for more information.
+                </p>
+              </div>
             )}
             
             {/* Gallery */}
-            {tour.gallery && (
+            {tour.gallery && tour.gallery.length > 0 && (
               <div
                 className="space-y-6"
                 style={{
@@ -306,7 +392,7 @@ const TourDetail: React.FC = () => {
             )}
             
             {/* FAQs */}
-            {tour.faqs && (
+            {tour.faqs && tour.faqs.length > 0 && (
               <div>
                 <h2 className="text-2xl font-bold mb-4">Frequently Asked Questions</h2>
                 <div className="space-y-4">
@@ -330,7 +416,7 @@ const TourDetail: React.FC = () => {
                     <div>
                       <span className="text-dark-500">From</span>
                       <div className="text-3xl font-bold text-dark-900">
-                        ${tour.price}
+                        TZS {displayPrice}
                         <span className="text-base font-normal text-dark-500">/person</span>
                       </div>
                     </div>
@@ -339,7 +425,7 @@ const TourDetail: React.FC = () => {
                     </button>
                   </div>
                   
-                  <Link to={`/book?tour=${tour.id}`}>
+                  <Link to={`/book?tour=${tour.originalId || tour.id}`}>
                     <Button 
                       variant="accent"
                       fullWidth
@@ -359,7 +445,7 @@ const TourDetail: React.FC = () => {
                   </Button>
                 </div>
                 
-                {tour.included && (
+                {tour.included && tour.included.length > 0 && (
                   <div className="border-t border-gray-100 p-6">
                     <h3 className="font-bold text-lg mb-4">What's Included</h3>
                     <div className="space-y-3">
@@ -377,7 +463,7 @@ const TourDetail: React.FC = () => {
                   </div>
                 )}
                 
-                {tour.excluded && (
+                {tour.excluded && tour.excluded.length > 0 && (
                   <div className="border-t border-gray-100 p-6">
                     <h3 className="font-bold text-lg mb-4">Not Included</h3>
                     <div className="space-y-3">

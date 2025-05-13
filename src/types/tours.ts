@@ -1,13 +1,15 @@
 export interface FeaturedItem {
   id: string;
+  originalId?: string;
   title: string;
+  slug?: string;
   duration: string;
   price: number;
   location: string;
   image: string;
   rating: number;
   description: string;
-  category: 'all' | 'hiking' | 'cycling' | 'cultural' | 'event';
+  category: 'all' | 'hiking' | 'cycling' | 'cultural' | 'event' | '4x4' | 'motocamping' | 'school';
   featured?: boolean;
   type: 'tour' | 'event';
   date?: string;
@@ -22,6 +24,12 @@ export interface FeaturedItem {
   requirements?: string[];
   gallery?: string[];
   faqs?: FAQ[];
+  bestSeason?: string;
+  season?: string;
+  accommodationType?: string;
+  status?: 'draft' | 'published' | 'archived';
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface DayItinerary {
@@ -33,6 +41,7 @@ export interface DayItinerary {
   accommodation?: string;
   distance?: string;
   elevation?: string;
+  location?: string;
 }
 
 export interface FAQ {

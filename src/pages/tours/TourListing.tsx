@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
-import { Filter, MapPin, Calendar, Search, X, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { Filter, Search, X, ChevronDown, ChevronUp } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import Section from '../../components/ui/Section';
 import TourCard from '../../components/tours/TourCard';
 import { FeaturedItem } from '../../types/tours';
-import { toursService, Tour } from '../../services/tours.service';
+import { toursService } from '../../services/tours.service';
 
 interface FilterOptions {
   duration: string;
@@ -38,6 +38,14 @@ const TourListing: React.FC = () => {
         
         // Convert to FeaturedItem format
         const featuredTours = toursData.map(tour => toursService.toFeaturedItem(tour));
+        
+        // Debug log to troubleshoot issues with tours not showing
+        console.log(`Debug - Tour type: ${category}`, { 
+          tourType, 
+          recordsCount: toursData.length,
+          featuredToursCount: featuredTours.length,
+          featuredTours
+        });
         
         setTours(featuredTours);
         setFilteredTours(featuredTours);
@@ -455,7 +463,7 @@ const TourListing: React.FC = () => {
             ) : filteredTours.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredTours.map(tour => (
-                  <Link key={tour.id} to={`/tour/${tour.id}`} className="block h-full">
+                  <Link key={tour.id} to={`/tour/${tour.originalId || tour.id}`} className="block h-full">
                     <TourCard item={tour} onViewDetails={() => {}} />
                   </Link>
                 ))}

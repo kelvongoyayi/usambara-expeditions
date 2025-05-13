@@ -14,17 +14,17 @@ const DetailsPanelLayout: React.FC<DetailsPanelLayoutProps> = ({
   action,
 }) => {
   return (
-    <div className="space-y-2">
+    <div className="space-y-1 sm:space-y-2">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-lg font-medium text-gray-900 mb-1">{title}</h2>
+          <h2 className="text-base sm:text-lg font-medium text-gray-900 mb-0.5 sm:mb-1">{title}</h2>
           {description && (
-            <p className="text-sm text-gray-500">{description}</p>
+            <p className="text-xs sm:text-sm text-gray-500">{description}</p>
           )}
         </div>
         {action && <div>{action}</div>}
       </div>
-      <div className="mt-4">{children}</div>
+      <div className="mt-2 sm:mt-4">{children}</div>
     </div>
   );
 };

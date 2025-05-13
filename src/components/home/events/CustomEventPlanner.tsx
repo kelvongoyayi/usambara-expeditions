@@ -163,7 +163,7 @@ const CustomEventPlanner: React.FC<CustomEventPlannerProps> = ({ className = '' 
                       onFocus={() => handleFocus('eventType')}
                       onBlur={handleBlur}
                     >
-                      <option value="" disabled selected>Select event type</option>
+                      <option value="" disabled>Select event type</option>
                       <option value="corporate" className="bg-dark-800">Corporate Event</option>
                       <option value="adventure">Adventure Event</option>
                       <option value="educational">Educational Program</option>
