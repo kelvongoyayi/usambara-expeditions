@@ -1,10 +1,16 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Event } from '../../../../services/events.service';
+import { destinationsService } from '../../../../services/destinations.service';
 import {
   Card,
   CardBody,
 } from '../../../../components/ui';
 import { Calendar, Clock, MapPin, Info, DollarSign } from 'lucide-react';
+
+interface Destination {
+  id: string;
+  name: string;
+}
 
 interface BasicInfoStepProps {
   formValues: {
@@ -21,10 +27,53 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
   errors = {}
 }) => {
   const { values, onChange } = formValues;
+  const [destinations, setDestinations] = useState<Destination[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch destinations for the dropdown
+  useEffect(() => {
+    const fetchDestinations = async () => {
+      setLoading(true);
+      try {
+        const result = await destinationsService.getDestinations();
+        setDestinations(result.map(d => ({ id: d.id, name: d.name })));
+      } catch (error) {
+        console.error('Error fetching destinations:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDestinations();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     onChange(name, value);
+  };
+
+  // Handle date and time combination
+  const handleDateTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    
+    // If it's a date input, store the date in the correct field
+    if (name === 'start_date' || name === 'end_date') {
+      onChange(name, value);
+      return;
+    }
+    
+    // If it's a time input, store it separately but also combine with date
+    if (name === 'time') {
+      onChange(name, value);
+      
+      // If we have both date and time, we could store a timestamp in a DB field
+      // This is a hint for future database updates
+      if (values.start_date && value) {
+        const timestampStr = `${values.start_date}T${value}`;
+        console.log('Combined timestamp:', timestampStr);
+        // In future, you can store this as a timestamp field in DB
+      }
+    }
   };
 
   return (
@@ -65,6 +114,27 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
           {errors?.event_type && <p className="text-red-500 mt-1 text-sm">{errors.event_type}</p>}
         </div>
         
+        {/* Destination - Added field */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Destination</label>
+          <select
+            name="destination_id"
+            value={values.destination_id || ''}
+            onChange={handleChange}
+            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-400"
+            disabled={loading}
+          >
+            <option value="">Select a Destination</option>
+            {destinations.map((destination) => (
+              <option key={destination.id} value={destination.id}>
+                {destination.name}
+              </option>
+            ))}
+          </select>
+          {loading && <p className="text-xs text-gray-500 mt-1">Loading destinations...</p>}
+          {errors?.destination_id && <p className="text-red-500 mt-1 text-sm">{errors.destination_id}</p>}
+        </div>
+        
         {/* Description */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1 required">Description</label>
@@ -92,7 +162,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
                 type="date"
                 name="start_date"
                 value={values.start_date || ''}
-                onChange={handleChange}
+                onChange={handleDateTimeChange}
                 className="w-full border border-gray-300 rounded-md pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-400"
               />
             </div>
@@ -109,7 +179,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
                 type="date"
                 name="end_date"
                 value={values.end_date || ''}
-                onChange={handleChange}
+                onChange={handleDateTimeChange}
                 className="w-full border border-gray-300 rounded-md pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-400"
               />
             </div>
@@ -128,10 +198,11 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
                 type="time"
                 name="time"
                 value={values.time || ''}
-                onChange={handleChange}
+                onChange={handleDateTimeChange}
                 className="w-full border border-gray-300 rounded-md pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-400"
               />
             </div>
+            <p className="text-xs text-gray-500 mt-1">This time will be stored with the start date.</p>
             {errors?.time && <p className="text-red-500 mt-1 text-sm">{errors.time}</p>}
           </div>
           
@@ -196,18 +267,32 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
         </div>
         
         {/* Capacity */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Maximum Attendees</label>
-          <input
-            type="number"
-            name="max_attendees"
-            value={values.max_attendees || ''}
-            onChange={handleChange}
-            placeholder="Maximum number of attendees"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-400"
-          />
-          <p className="text-xs text-gray-500 mt-1">Leave blank if there's no limit to the number of attendees.</p>
-          {errors?.max_attendees && <p className="text-red-500 mt-1 text-sm">{errors.max_attendees}</p>}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Attendees</label>
+            <input
+              type="number"
+              name="min_attendees"
+              value={values.min_attendees || ''}
+              onChange={handleChange}
+              placeholder="Minimum number of attendees"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-400"
+            />
+            {errors?.min_attendees && <p className="text-red-500 mt-1 text-sm">{errors.min_attendees}</p>}
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Maximum Attendees</label>
+            <input
+              type="number"
+              name="max_attendees"
+              value={values.max_attendees || ''}
+              onChange={handleChange}
+              placeholder="Maximum number of attendees"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-400"
+            />
+            {errors?.max_attendees && <p className="text-red-500 mt-1 text-sm">{errors.max_attendees}</p>}
+          </div>
         </div>
         
         {/* Tips Card */}
